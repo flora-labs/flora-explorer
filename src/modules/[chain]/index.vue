@@ -6,6 +6,7 @@ import { computed } from '@vue/reactivity';
 import CardStatisticsVertical from '@/components/CardStatisticsVertical.vue';
 import ProposalListItem from '@/components/ProposalListItem.vue';
 import ArrayObjectElement from '@/components/dynamic/ArrayObjectElement.vue';
+import DiscordBotAvatar from '@/assets/images/flora-bot-avatar-v3.jpg';
 
 const props = defineProps(['chain']);
 
@@ -139,22 +140,30 @@ const floraStats = computed(() => {
               </div>
               
               <!-- Action Icons Panel -->
-              <div class="flex flex-col gap-4">
-                <!-- AI Agent Button -->
+              <div class="flex gap-4 items-center">
+                <!-- Discord Bot Avatar -->
+                <a 
+                  href="https://discord.gg/floranetwork" 
+                  target="_blank"
+                  class="group relative backdrop-blur-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 rounded-full overflow-hidden border-2 border-indigo-500/30 transition-all duration-300 transform hover:scale-105"
+                  title="Join Flora Discord"
+                >
+                  <img 
+                    :src="DiscordBotAvatar" 
+                    alt="Flora Discord Bot" 
+                    class="w-16 h-16 object-cover"
+                  />
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </a>
+                
+                <!-- Sparkle AI Avatar -->
                 <button 
                   @click="showAIAgent = true"
-                  class="group backdrop-blur-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 rounded-2xl p-4 border border-purple-500/30 transition-all duration-300 transform hover:scale-105"
-                  title="AI Agent Assistant"
+                  class="group relative backdrop-blur-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded-full p-4 border-2 border-purple-500/30 transition-all duration-300 transform hover:scale-105"
+                  title="AI Assistant"
                 >
-                  <Icon icon="mdi:robot-excited" class="text-4xl text-purple-400 group-hover:text-purple-300" />
-                </button>
-                
-                <!-- Add more icons here as needed -->
-                <button 
-                  class="group backdrop-blur-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 rounded-2xl p-4 border border-cyan-500/30 transition-all duration-300 transform hover:scale-105"
-                  title="Analytics"
-                >
-                  <Icon icon="mdi:chart-line" class="text-4xl text-cyan-400 group-hover:text-cyan-300" />
+                  <Icon icon="mdi:sparkles" class="text-3xl text-purple-400 group-hover:text-purple-300" />
+                  <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                 </button>
               </div>
             </div>
