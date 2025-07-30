@@ -155,15 +155,14 @@ const floraStats = computed(() => {
                   <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </a>
                 
-                <!-- Sparkle AI Avatar -->
+                <!-- AI Robot Avatar -->
                 <a 
                   href="https://dev.flora.network"
                   target="_blank"
-                  class="group relative backdrop-blur-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded-full border-2 border-purple-500/30 transition-all duration-300 transform hover:scale-105 w-16 h-16 flex items-center justify-center"
+                  class="group relative backdrop-blur-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 hover:from-blue-500/30 hover:to-indigo-500/30 rounded-full border-2 border-blue-500/30 transition-all duration-300 transform hover:scale-105 w-16 h-16 flex items-center justify-center"
                   title="Flora Dev Portal"
                 >
-                  <Icon icon="mdi:robot-excited" class="text-4xl text-purple-400 group-hover:text-purple-300 transition-colors" />
-                  <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  <Icon icon="mdi:robot-excited" class="text-4xl text-blue-400 group-hover:text-blue-300 transition-colors" />
                 </a>
               </div>
             </div>
