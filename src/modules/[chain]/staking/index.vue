@@ -218,113 +218,151 @@ base.$subscribe((_, s) => {
 loadAvatars();
 </script>
 <template>
-  <div>
-    <div class="bg-base-100 rounded-lg grid sm:grid-cols-1 md:grid-cols-4 p-4">
-      <div class="flex">
-        <span>
-          <div class="relative w-9 h-9 rounded overflow-hidden flex items-center justify-center mr-2">
-            <Icon class="text-success" icon="mdi:trending-up" size="32" />
-            <div class="absolute top-0 left-0 bottom-0 right-0 opacity-20 bg-success"></div>
+  <div class="space-y-6">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Inflation -->
+      <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{ $t('staking.inflation') }}</div>
+            <Icon icon="mdi:trending-up" class="text-2xl text-green-500/70 dark:text-green-400/70" />
           </div>
-        </span>
-        <span>
-          <div class="font-bold">{{ format.percent(mintStore.inflation) }}</div>
-          <div class="text-xs">{{ $t('staking.inflation') }}</div>
-        </span>
+          <div class="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
+            {{ format.percent(mintStore.inflation) }}
+          </div>
+        </div>
       </div>
-      <div class="flex">
-        <span>
-          <div class="relative w-9 h-9 rounded overflow-hidden flex items-center justify-center mr-2">
-            <Icon class="text-primary" icon="mdi:lock-open-outline" size="32" />
-            <div class="absolute top-0 left-0 bottom-0 right-0 opacity-20 bg-primary"></div>
+
+      <!-- Unbonding Time -->
+      <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{ $t('staking.unbonding_time') }}</div>
+            <Icon icon="mdi:lock-open-outline" class="text-2xl text-blue-500/70 dark:text-blue-400/70" />
           </div>
-        </span>
-        <span>
-          <div class="font-bold">{{ formatSeconds(staking.params?.unbonding_time) }}</div>
-          <div class="text-xs">{{ $t('staking.unbonding_time') }}</div>
-        </span>
+          <div class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+            {{ formatSeconds(staking.params?.unbonding_time) }}
+          </div>
+        </div>
       </div>
-      <div class="flex">
-        <span>
-          <div class="relative w-9 h-9 rounded overflow-hidden flex items-center justify-center mr-2">
-            <Icon class="text-error" icon="mdi:alert-octagon-outline" size="32" />
-            <div class="absolute top-0 left-0 bottom-0 right-0 opacity-20 bg-error"></div>
+
+      <!-- Double Sign Slashing -->
+      <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{ $t('staking.double_sign_slashing') }}</div>
+            <Icon icon="mdi:alert-octagon-outline" class="text-2xl text-red-500/70 dark:text-red-400/70" />
           </div>
-        </span>
-        <span>
-          <div class="font-bold">{{ format.percent(slashing.slash_fraction_double_sign) }}</div>
-          <div class="text-xs">{{ $t('staking.double_sign_slashing') }}</div>
-        </span>
+          <div class="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 dark:from-red-400 dark:to-orange-400 bg-clip-text text-transparent">
+            {{ format.percent(slashing.slash_fraction_double_sign) }}
+          </div>
+        </div>
       </div>
-      <div class="flex">
-        <span>
-          <div class="relative w-9 h-9 rounded overflow-hidden flex items-center justify-center mr-2">
-            <Icon class="text-error" icon="mdi:pause" size="32" />
-            <div class="absolute top-0 left-0 bottom-0 right-0 opacity-20 bg-error"></div>
+
+      <!-- Downtime Slashing -->
+      <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">{{ $t('staking.downtime_slashing') }}</div>
+            <Icon icon="mdi:pause" class="text-2xl text-amber-500/70 dark:text-amber-400/70" />
           </div>
-        </span>
-        <span>
-          <div class="font-bold">{{ format.percent(slashing.slash_fraction_downtime) }}</div>
-          <div class="text-xs">{{ $t('staking.downtime_slashing') }}</div>
-        </span>
+          <div class="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+            {{ format.percent(slashing.slash_fraction_downtime) }}
+          </div>
+        </div>
       </div>
     </div>
 
-    <div>
-      <div class="flex items-center justify-between py-1">
-        <div class="tabs tabs-boxed bg-transparent">
-          <a class="tab text-gray-400" :class="{ 'tab-active': tab === 'featured' }" @click="tab = 'featured'">{{
-            $t('staking.popular')
-          }}</a>
-          <a class="tab text-gray-400" :class="{ 'tab-active': tab === 'active' }" @click="tab = 'active'">{{
-            $t('staking.active')
-          }}</a>
-          <a class="tab text-gray-400" :class="{ 'tab-active': tab === 'inactive' }" @click="tab = 'inactive'">{{
-            $t('staking.inactive')
-          }}</a>
-        </div>
+    <!-- Validator Table Section -->
+    <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-full blur-3xl transform translate-x-32 -translate-y-32"></div>
+      
+      <!-- Header with tabs -->
+      <div class="relative p-6 border-b border-gray-200 dark:border-white/10">
+        <div class="flex items-center justify-between">
+          <!-- Tab Navigation -->
+          <div class="flex gap-2">
+            <button 
+              class="px-4 py-2 rounded-xl font-medium transition-all duration-200"
+              :class="tab === 'featured' 
+                ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30' 
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'"
+              @click="tab = 'featured'"
+            >
+              {{ $t('staking.popular') }}
+            </button>
+            <button 
+              class="px-4 py-2 rounded-xl font-medium transition-all duration-200"
+              :class="tab === 'active' 
+                ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30' 
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'"
+              @click="tab = 'active'"
+            >
+              {{ $t('staking.active') }}
+            </button>
+            <button 
+              class="px-4 py-2 rounded-xl font-medium transition-all duration-200"
+              :class="tab === 'inactive' 
+                ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30' 
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'"
+              @click="tab = 'inactive'"
+            >
+              {{ $t('staking.inactive') }}
+            </button>
+          </div>
 
-        <div class="text-lg font-semibold">{{ list.length }}/{{ staking.params.max_validators }}</div>
+          <!-- Validator Count -->
+          <div class="text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent">
+            {{ list.length }}/{{ staking.params.max_validators }}
+          </div>
+        </div>
       </div>
 
-      <div class="bg-base-100 px-4 pt-3 pb-4 rounded shadow">
+      <!-- Table Content -->
+      <div class="p-6">
         <div class="overflow-x-auto">
           <table class="table staking-table w-full">
-            <thead class="bg-base-200">
-              <tr>
-                <th scope="col" class="uppercase" style="width: 3rem; position: relative">
+            <thead>
+              <tr class="border-b border-gray-200 dark:border-white/10">
+                <th scope="col" class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-2" style="width: 3rem">
                   {{ $t('staking.rank') }}
                 </th>
-                <th scope="col" class="uppercase">{{ $t('staking.validator') }}</th>
-                <th scope="col" class="text-right uppercase">{{ $t('staking.voting_power') }}</th>
-                <th scope="col" class="text-right uppercase">{{ $t('staking.24h_changes') }}</th>
-                <th scope="col" class="text-right uppercase">{{ $t('staking.commission') }}</th>
-                <th scope="col" class="text-center uppercase">{{ $t('staking.actions') }}</th>
+                <th scope="col" class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-2">{{ $t('staking.validator') }}</th>
+                <th scope="col" class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-2 text-right">{{ $t('staking.voting_power') }}</th>
+                <th scope="col" class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-2 text-right">{{ $t('staking.24h_changes') }}</th>
+                <th scope="col" class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-2 text-right">{{ $t('staking.commission') }}</th>
+                <th scope="col" class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-2 text-center">{{ $t('staking.actions') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="({ v, rank, logo }, i) in list"
                 :key="v.operator_address"
-                class="hover:bg-gray-100 dark:hover:bg-[#384059]"
+                class="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors duration-200"
               >
                 <!-- 👉 rank -->
-                <td>
-                  <div class="text-xs truncate relative px-2 py-1 rounded-full w-fit" :class="`text-${rank}`">
-                    <span class="inset-x-0 inset-y-0 opacity-10 absolute" :class="`bg-${rank}`"></span>
+                <td class="py-4 px-2">
+                  <div class="text-xs font-semibold relative px-3 py-1 rounded-xl w-fit backdrop-blur-sm" 
+                       :class="rank === 'error' ? 'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30' :
+                               rank === 'warning' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30' :
+                               'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30'">
                     {{ i + 1 }}
                   </div>
                 </td>
                 <!-- 👉 Validator -->
-                <td>
+                <td class="py-4 px-2">
                   <div class="flex items-center overflow-hidden" style="max-width: 300px">
-                    <div class="avatar mr-4 relative w-8 h-8 rounded-full">
-                      <div class="w-8 h-8 rounded-full bg-gray-400 absolute opacity-10"></div>
-                      <div class="w-8 h-8 rounded-full">
+                    <div class="avatar mr-4 relative w-10 h-10 rounded-full overflow-hidden backdrop-blur-sm bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20">
+                      <div class="w-10 h-10 rounded-full">
                         <img
                           v-if="logo"
                           :src="logo"
-                          class="object-contain"
+                          class="object-cover w-full h-full"
                           @error="
                             (e) => {
                               const identity = v.description?.identity;
@@ -332,33 +370,31 @@ loadAvatars();
                             }
                           "
                         />
-                        <Icon v-else class="text-3xl" :icon="`mdi-help-circle-outline`" />
+                        <Icon v-else class="text-2xl text-purple-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" :icon="`mdi-account-circle`" />
                       </div>
                     </div>
 
                     <div class="flex flex-col">
-                      <span class="text-sm text-primary dark:invert whitespace-nowrap overflow-hidden">
-                        <RouterLink
-                          :to="{
-                            name: 'chain-staking-validator',
-                            params: {
-                              validator: v.operator_address,
-                            },
-                          }"
-                          class="font-weight-medium"
-                        >
-                          {{ v.description?.moniker }}
-                        </RouterLink>
-                      </span>
-                      <span class="text-xs">{{ v.description?.website || v.description?.identity || '-' }}</span>
+                      <RouterLink
+                        :to="{
+                          name: 'chain-staking-validator',
+                          params: {
+                            validator: v.operator_address,
+                          },
+                        }"
+                        class="text-sm font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                      >
+                        {{ v.description?.moniker }}
+                      </RouterLink>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">{{ v.description?.website || v.description?.identity || '-' }}</span>
                     </div>
                   </div>
                 </td>
 
                 <!-- 👉 Voting Power -->
-                <td class="text-right">
+                <td class="text-right py-4 px-2">
                   <div class="flex flex-col">
-                    <h6 class="text-sm font-weight-medium whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
                       {{
                         format.formatToken(
                           {
@@ -369,51 +405,62 @@ loadAvatars();
                           '0,0'
                         )
                       }}
-                    </h6>
-                    <span class="text-xs">{{ format.calculatePercent(v.delegator_shares, staking.totalPower) }}</span>
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ format.calculatePercent(v.delegator_shares, staking.totalPower) }}</span>
                   </div>
                 </td>
                 <!-- 👉 24h Changes -->
-                <td class="text-right text-xs" :class="change24Color(v)">
-                  {{ change24Text(v) }}
+                <td class="text-right py-4 px-2">
+                  <span class="text-sm font-semibold" :class="change24Color(v)">
+                    {{ change24Text(v) }}
+                  </span>
                 </td>
                 <!-- 👉 commission -->
-                <td class="text-right text-xs">
-                  {{ format.formatCommissionRate(v.commission?.commission_rates?.rate) }}
+                <td class="text-right py-4 px-2">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ format.formatCommissionRate(v.commission?.commission_rates?.rate) }}
+                  </span>
                 </td>
                 <!-- 👉 Action -->
-                <td class="text-center">
-                  <div v-if="v.jailed" class="badge badge-error gap-2 text-white">
+                <td class="text-center py-4 px-2">
+                  <div v-if="v.jailed" class="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30">
+                    <Icon icon="mdi:lock" class="text-sm" />
                     {{ $t('staking.jailed') }}
                   </div>
-                  <label
+                  <button
                     v-else
-                    for="delegate"
-                    class="btn btn-xs btn-primary rounded-sm capitalize"
+                    class="px-4 py-2 rounded-xl text-xs font-medium bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition-all duration-200 transform hover:scale-105"
                     @click="
                       dialog.open('delegate', {
                         validator_address: v.operator_address,
                       })
                     "
-                    >{{ $t('account.btn_delegate') }}</label
                   >
+                    {{ $t('account.btn_delegate') }}
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+      </div>
 
-        <div class="divider"></div>
-        <div class="flex flex-row items-center">
-          <div class="text-xs truncate relative py-2 px-4 rounded-md w-fit text-error mr-2">
-            <span class="inset-x-0 inset-y-0 opacity-10 absolute bg-error"></span>
-            {{ $t('staking.top') }} 33%
+      <!-- Legend Footer -->
+      <div class="p-6 pt-0">
+        <div class="flex flex-wrap items-center gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <div class="px-3 py-1 rounded-xl text-xs font-medium bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30">
+              {{ $t('staking.top') }} 33%
+            </div>
+            <span class="text-gray-600 dark:text-gray-400">Most centralized</span>
           </div>
-          <div class="text-xs truncate relative py-2 px-4 rounded-md w-fit text-warning">
-            <span class="inset-x-0 inset-y-0 opacity-10 absolute bg-warning"></span>
-            {{ $t('staking.top') }} 67%
+          <div class="flex items-center gap-2">
+            <div class="px-3 py-1 rounded-xl text-xs font-medium bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+              {{ $t('staking.top') }} 67%
+            </div>
+            <span class="text-gray-600 dark:text-gray-400">Moderately distributed</span>
           </div>
-          <div class="text-xs hidden md:!block pl-2">
+          <div class="flex-1 text-xs text-gray-500 dark:text-gray-400 hidden md:block text-right">
             {{ $t('staking.description') }}
           </div>
         </div>
