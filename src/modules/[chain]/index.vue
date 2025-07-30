@@ -143,7 +143,7 @@ const floraStats = computed(() => {
               <div class="flex gap-4 items-center">
                 <!-- Discord Bot Avatar -->
                 <a 
-                  href="https://discord.gg/floranetwork" 
+                  href="https://discord.flora.network" 
                   target="_blank"
                   class="group relative backdrop-blur-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 rounded-full overflow-hidden border-2 border-indigo-500/30 transition-all duration-300 transform hover:scale-105"
                   title="Join Flora Discord"
