@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flora Connection Test</title>
+</head>
+<body>
+    <h1>Flora Local Node Test</h1>
+    <div id="status">Testing connection...</div>
+    <div id="height"></div>
+    <div id="error"></div>
+    
+    <script>
+        // Test direct connection to local Flora node
+        fetch('http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest')
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('status').innerHTML = '✅ Connected to Flora node';
+                document.getElementById('height').innerHTML = 'Current block height: ' + data.block.header.height;
+                console.log('Full response:', data);
+            })
+            .catch(error => {
+                document.getElementById('status').innerHTML = '❌ Connection failed';
+                document.getElementById('error').innerHTML = 'Error: ' + error.message;
+                console.error('Connection error:', error);
+            });
+    </script>
+</body>
+</html>
