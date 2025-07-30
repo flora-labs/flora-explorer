@@ -24,8 +24,6 @@ const distributionStore = useDistributionStore();
 // Create a reactive ref for supply
 const totalSupply = ref('0');
 
-// AI Agent Modal
-const showAIAgent = ref(false);
 
 // Version info
 interface VersionInfo {
@@ -140,31 +138,35 @@ const floraStats = computed(() => {
               </div>
               
               <!-- Action Icons Panel -->
-              <div class="flex gap-4 items-center">
+              <div class="flex gap-6 items-center">
                 <!-- Discord Bot Avatar -->
                 <a 
                   href="https://discord.flora.network" 
                   target="_blank"
-                  class="group relative backdrop-blur-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 rounded-full overflow-hidden border-2 border-indigo-500/30 transition-all duration-300 transform hover:scale-105"
+                  class="group flex items-center gap-3"
                   title="Join Flora Discord"
                 >
-                  <img 
-                    :src="DiscordBotAvatar" 
-                    alt="Flora Discord Bot" 
-                    class="w-16 h-16 object-cover"
-                  />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div class="relative backdrop-blur-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 rounded-full overflow-hidden border-2 border-indigo-500/30 transition-all duration-300 transform group-hover:scale-105">
+                    <img 
+                      :src="DiscordBotAvatar" 
+                      alt="Flora Discord Bot" 
+                      class="w-16 h-16 object-cover"
+                    />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </div>
+                  <span class="text-lg font-semibold text-gray-700 dark:text-gray-300 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">Discord</span>
                 </a>
                 
                 <!-- Sparkle AI Avatar -->
-                <button 
-                  @click="showAIAgent = true"
-                  class="group relative backdrop-blur-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded-full p-4 border-2 border-purple-500/30 transition-all duration-300 transform hover:scale-105"
-                  title="AI Assistant"
+                <a 
+                  href="https://dev.flora.network"
+                  target="_blank"
+                  class="group relative backdrop-blur-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded-full border-2 border-purple-500/30 transition-all duration-300 transform hover:scale-105 w-16 h-16 flex items-center justify-center"
+                  title="Flora Dev Portal"
                 >
-                  <Icon icon="mdi:sparkles" class="text-3xl text-purple-400 group-hover:text-purple-300" />
+                  <Icon icon="mdi:sparkles" class="text-4xl text-purple-400 group-hover:text-purple-300" />
                   <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -406,61 +408,6 @@ const floraStats = computed(() => {
       </div>
     </div>
   </div>
-  
-  <!-- AI Agent Modal -->
-  <Teleport to="body" v-if="showAIAgent">
-  <div class="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-    <!-- Backdrop -->
-    <div 
-      class="absolute inset-0 bg-black/50 backdrop-blur-sm"
-      @click="showAIAgent = false"
-    ></div>
-    
-    <!-- Modal Content -->
-    <div class="relative w-full max-w-4xl h-[80vh] backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 rounded-3xl border border-gray-200 dark:border-white/10 shadow-2xl flex flex-col overflow-hidden">
-      <!-- Header -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/10">
-        <div class="flex items-center gap-3">
-          <Icon icon="mdi:robot-excited" class="text-3xl text-purple-400" />
-          <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Flora AI Assistant
-          </h2>
-        </div>
-        <button 
-          @click="showAIAgent = false"
-          class="btn btn-sm btn-ghost btn-circle"
-        >
-          <Icon icon="mdi:close" class="text-xl" />
-        </button>
-      </div>
-      
-      <!-- Body -->
-      <div class="flex-1 p-6 overflow-y-auto">
-        <div class="text-center py-16">
-          <Icon icon="mdi:robot-confused" class="text-8xl text-gray-400 dark:text-gray-600 mb-4" />
-          <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            AI Assistant Coming Soon
-          </h3>
-          <p class="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-            Our AI agent will help you navigate the Flora blockchain, analyze transactions, and provide insights about network activity.
-          </p>
-        </div>
-      </div>
-      
-      <!-- Footer -->
-      <div class="p-6 border-t border-gray-200 dark:border-white/10">
-        <div class="flex justify-end">
-          <button 
-            @click="showAIAgent = false"
-            class="btn btn-primary"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</Teleport>
 </template>
 
 <style scoped>
