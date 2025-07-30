@@ -1,0 +1,35 @@
+{
+  "chain_name": "flora-testnet",
+  "chain_id": "flora_7668378-1",
+  "pretty_name": "Flora Testnet",
+  "api": ["http://localhost:1317"],
+  "rpc": ["http://localhost:26657"],
+  "evm": {
+    "chainId": "0x7524FA",
+    "rpc": ["http://localhost:8545"]
+  },
+  "coingecko": "",
+  "snapshot_provider": "",
+  "sdk_version": "0.50.13",
+  "coin_type": "60",
+  "min_tx_fee": "5000000000000000",
+  "addr_prefix": "flora",
+  "logo": "/logo.svg",
+  "assets": [{
+    "base": "uflora",
+    "symbol": "FLORA",
+    "exponent": 18,
+    "coingecko_id": "",
+    "logo": "/logo.svg",
+    "denom_units": [
+      {
+        "denom": "uflora",
+        "exponent": 0
+      },
+      {
+        "denom": "flora",
+        "exponent": 18
+      }
+    ]
+  }]
+}

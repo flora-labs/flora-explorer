@@ -1,0 +1,10 @@
+node_modules/
+**/.vscode
+yarn-error.log
+dist
+.idea
+# AI/Claude related files
+.mcp.json
+.claude/
+CLAUDE.md
+*.mcp.json
