@@ -80,16 +80,26 @@ const params = computed(() => {
 });
 
 async function connectKeplr() {
-  showWalletSelector.value = false;
-  
   if (!window.keplr) {
     alert('Please install Keplr extension');
     return;
   }
   
   try {
-    const chainId = baseStore.currentChainId || chainStore.chainName;
+    // First, suggest the chain to Keplr
+    const chainId = baseStore.currentChainId || 'flora_7668378-1';
+    
+    // Try to suggest chain configuration first
+    try {
+      await walletStore.suggestChain();
+    } catch (e) {
+      console.log('Chain already added or suggestion failed:', e);
+    }
+    
+    // Enable the chain
     await window.keplr.enable(chainId);
+    
+    // Get account info
     const offlineSigner = window.keplr.getOfflineSigner(chainId);
     const accounts = await offlineSigner.getAccounts();
     
@@ -98,10 +108,12 @@ async function connectKeplr() {
         wallet: 'Keplr',
         address: accounts[0].address,
       });
+      showWalletSelector.value = false;
+      showDrawer.value = true;
     }
   } catch (error) {
     console.error('Keplr connection failed:', error);
-    alert('Failed to connect to Keplr');
+    alert('Failed to connect to Keplr. Please try adding the chain manually.');
   }
 }
 
