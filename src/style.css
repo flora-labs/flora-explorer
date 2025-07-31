@@ -594,6 +594,23 @@ dialog {
   z-index: 1040 !important;
 }
 
+/* Dropdown z-index fixes */
+.dropdown {
+  z-index: 40 !important;
+}
+
+.dropdown-content {
+  z-index: 1060 !important;
+  position: absolute !important;
+}
+
+/* Ensure dropdown appears above glassmorphic panels */
+.dropdown.dropdown-open .dropdown-content,
+.dropdown:focus .dropdown-content,
+.dropdown:focus-within .dropdown-content {
+  z-index: 1060 !important;
+}
+
 /* Ensure glass panels don't interfere with modals */
 .backdrop-blur-xl,
 .backdrop-blur-md,
