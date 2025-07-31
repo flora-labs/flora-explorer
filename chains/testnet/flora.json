@@ -1,12 +1,12 @@
 {
-  "chain_name": "flora-testnet",
+  "chain_name": "flora-devnet",
   "chain_id": "flora_7668378-1",
-  "pretty_name": "Flora Testnet",
-  "api": ["http://52.9.17.25:1317", "http://50.18.34.12:1317", "http://204.236.162.240:1317"],
-  "rpc": ["http://52.9.17.25:26657", "http://50.18.34.12:26657", "http://204.236.162.240:26657"],
+  "pretty_name": "Flora Devnet",
+  "api": ["http://127.0.0.1:1317", "http://52.9.17.25:1317", "http://50.18.34.12:1317", "http://204.236.162.240:1317"],
+  "rpc": ["http://127.0.0.1:26657", "http://52.9.17.25:26657", "http://50.18.34.12:26657", "http://204.236.162.240:26657"],
   "evm": {
-    "chainId": "0x7524FA",
-    "rpc": ["http://localhost:8545"]
+    "chainId": "0x75029a",
+    "rpc": ["http://127.0.0.1:8545", "http://52.9.17.25:8545", "http://50.18.34.12:8545", "http://204.236.162.240:8545"]
   },
   "coingecko": "",
   "snapshot_provider": "",

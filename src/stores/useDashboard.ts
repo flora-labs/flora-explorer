@@ -65,6 +65,15 @@ export function convertFromLocal(lc: LocalChainConfig): ChainConfig {
   conf.keplrPriceStep = lc.keplr_price_step;
   conf.themeColor = lc.theme_color;
   conf.faucet = lc.faucet;
+  
+  // Add EVM configuration support
+  if (lc.evm) {
+    conf.evm = {
+      chainId: lc.evm.chainId,
+      rpc: apiConverter(lc.evm.rpc)
+    };
+  }
+  
   return conf;
 }
 
@@ -141,7 +150,7 @@ export enum LoadingStatus {
 
 export const useDashboard = defineStore('dashboard', {
   state: () => {
-    const favMap = JSON.parse(localStorage.getItem('favoriteMap') || '{"cosmos":true, "osmosis":true}');
+    const favMap = { 'flora-devnet': true }; // Only flora-devnet as favorite
     return {
       status: LoadingStatus.Empty,
       source: ConfigSource.MainnetCosmosDirectory,
@@ -182,6 +191,8 @@ export const useDashboard = defineStore('dashboard', {
           });
       });
 
+      // DISABLED: CoinGecko price fetching
+      /*
       const currencies = ['usd, cny']; // usd,cny,eur,jpy,krw,sgd,hkd
       get(
         `https://api.coingecko.com/api/v3/simple/price?include_24hr_change=true&vs_currencies=${currencies.join(
@@ -189,7 +200,11 @@ export const useDashboard = defineStore('dashboard', {
         )}&ids=${coinIds.join(',')}`
       ).then((x) => {
         this.prices = x;
+      }).catch((error) => {
+        console.warn('Failed to fetch prices from CoinGecko:', error);
+        // Silently fail - prices are optional
       });
+      */
     },
     async loadingFromRegistry() {
       if (this.status === LoadingStatus.Empty) {
@@ -215,29 +230,20 @@ export const useDashboard = defineStore('dashboard', {
       console.log('Mainnet chains raw:', mainnetChains);
       console.log('Testnet chains raw:', testnetChains);
       
-      // Load mainnet chains
-      Object.entries(mainnetChains).forEach(([path, module]) => {
-        const chainConfig = (module as any).default || module;
-        if (chainConfig && chainConfig.chain_name) {
-          this.chains[chainConfig.chain_name] = convertFromLocal(chainConfig);
-        }
-      });
-      
-      // Load testnet chains (including Flora)
+      // Only load flora-devnet from testnet chains
       Object.entries(testnetChains).forEach(([path, module]) => {
         const chainConfig = (module as any).default || module;
-        console.log('Loading testnet chain from', path, ':', chainConfig);
-        if (chainConfig && chainConfig.chain_name) {
+        if (chainConfig && chainConfig.chain_name === 'flora-devnet') {
           this.chains[chainConfig.chain_name] = convertFromLocal(chainConfig);
         }
       });
       
       // Manually add Flora if not loaded
-      if (!this.chains['flora-testnet']) {
+      if (!this.chains['flora-devnet']) {
         const floraConfig = {
-          chain_name: "flora-testnet",
+          chain_name: "flora-devnet",
           chain_id: "flora_7668378-1",
-          pretty_name: "Flora Testnet",
+          pretty_name: "Flora Devnet",
           api: ["http://52.9.17.25:1317", "http://50.18.34.12:1317", "http://204.236.162.240:1317"],
           rpc: ["http://52.9.17.25:26657", "http://50.18.34.12:26657", "http://204.236.162.240:26657"],
           grpc: [],
@@ -246,7 +252,7 @@ export const useDashboard = defineStore('dashboard', {
           min_tx_fee: "5000000000000000",
           addr_prefix: "flora",
           logo: "https://raw.githubusercontent.com/cosmos/chain-registry/master/_non-cosmos/ethereum/images/eth-white.png",
-          alias: "flora-testnet",
+          alias: "flora-devnet",
           provider_chain: {
             chain_name: "",
             client_id: "",
@@ -265,12 +271,12 @@ export const useDashboard = defineStore('dashboard', {
             ]
           }]
         };
-        this.chains['flora-testnet'] = convertFromLocal(floraConfig);
+        this.chains['flora-devnet'] = convertFromLocal(floraConfig);
       }
       
       console.log('Loaded chains:', Object.keys(this.chains));
       console.log('Total chains loaded:', Object.keys(this.chains).length);
-      console.log('Flora loaded?', 'flora-testnet' in this.chains);
+      console.log('Flora loaded?', 'flora-devnet' in this.chains);
       
       this.setupDefault();
       this.status = LoadingStatus.Loaded;
@@ -289,21 +295,8 @@ export const useDashboard = defineStore('dashboard', {
     setupDefault() {
       if (this.length > 0) {
         const blockchain = useBlockchain();
-        const keys = Object.keys(this.favoriteMap);
-        for (let i = 0; i < keys.length; i++) {
-          if (
-            !blockchain.chainName &&
-            this.chains[keys[i]] &&
-            this.favoriteMap[keys[i]]
-          ) {
-            blockchain.setCurrent(keys[i]);
-            break;
-          }
-        }
-        if (!blockchain.chainName) {
-          const [first] = Object.keys(this.chains);
-          blockchain.setCurrent(first);
-        }
+        // Always set to flora-devnet
+        blockchain.setCurrent('flora-devnet');
         this.loadingPrices();
       }
     },

@@ -10,6 +10,7 @@ import { NetworkType } from '@/types/chaindata';
 import { CosmosRestClient } from '@/libs/client';
 import { onMounted } from 'vue';
 import AdBanner from '@/components/ad/AdBanner.vue';
+import { Icon } from '@iconify/vue';
 
 const error = ref('');
 const conf = ref('');
@@ -158,40 +159,221 @@ function suggest() {
 </script>
 
 <template>
-  <div class="bg-base-100 p-4 rounded text-center">
-    <div class="flex text-center">
-      <select v-model="network" class="select select-bordered">
-        <option :value="NetworkType.Mainnet">Mainnet</option>
-        <option :value="NetworkType.Testnet">Testnet</option>
-      </select>
-      <select v-model="selected" class="select select-bordered mx-5" @change="onchange">
-        <option v-for="c in chains" :value="c">
-          {{ c.chainName }}
-        </option>
-      </select>
-      <label
-        ><input type="radio" v-model="wallet" value="keplr" class="radio radio-bordered" @change="onchange" />
-        Keplr</label
-      >
-      <label
-        ><input type="radio" v-model="wallet" value="metamask" class="radio radio-bordered ml-4" @change="onchange" />
-        Metamask</label
-      >
+  <div class="min-h-screen py-12 relative">
+    <!-- Background Effects -->
+    <div class="absolute inset-0 -z-10 overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-white/40 via-transparent to-white/20 dark:from-black/20 dark:via-transparent dark:to-transparent"></div>
+      <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
     </div>
-    <div class="text-main mt-5">
-      <textarea v-model="conf" class="textarea textarea-bordered w-full" rows="15"></textarea>
-    </div>
-    <div class="mt-4 mb-4">
-      <button class="btn !bg-primary !border-primary text-white mr-2" @click="suggest">
-        Suggest {{ selected.chainName }} TO {{ wallet }}
-      </button>
 
-      <div class="mt-4">
-        If the chain is not offically support on Keplr/Metamask Snap, you can submit these parameters to enable
-        Keplr/Metamask Snap.
+    <div class="space-y-8">
+      <!-- Page Header -->
+      <div class="backdrop-blur-md bg-gradient-to-br from-white/95 via-purple-50/90 to-blue-50/90 dark:from-gray-800/90 dark:via-gray-800/80 dark:to-gray-900/90 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-400/20 via-blue-400/15 to-pink-400/20 rounded-full blur-3xl transform translate-x-48 -translate-y-48 animate-pulse-slow"></div>
+        <div class="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-blue-400/20 via-indigo-400/15 to-purple-400/20 rounded-full blur-3xl transform -translate-x-40 translate-y-40 animate-pulse-slow" style="animation-delay: 2s"></div>
+        
+        <div class="relative p-8">
+          <div class="flex items-center gap-4">
+            <div class="p-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-sm">
+              <Icon icon="mdi:wallet-plus" class="text-4xl text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 dark:from-purple-400 dark:via-blue-400 dark:to-pink-400 bg-clip-text text-transparent animate-gradient">
+                Wallet Integration
+              </h1>
+              <p class="text-gray-600 dark:text-gray-400 mt-1">Add chains to Keplr or MetaMask wallets</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuration Panel -->
+      <div class="backdrop-blur-md bg-white/95 dark:bg-gray-800/90 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-full blur-3xl transform translate-x-32 -translate-y-32"></div>
+        
+        <div class="relative p-8">
+          <!-- Selection Controls -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Network Selection -->
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Network Type</label>
+              <select v-model="network" 
+                class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-200"
+              >
+                <option :value="NetworkType.Mainnet">Mainnet</option>
+                <option :value="NetworkType.Testnet">Testnet</option>
+              </select>
+            </div>
+
+            <!-- Chain Selection -->
+            <div class="space-y-2 lg:col-span-2">
+              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Chain</label>
+              <select v-model="selected" @change="onchange"
+                class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-200"
+              >
+                <option v-for="c in chains" :key="c.chainName" :value="c">
+                  {{ c.chainName }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Wallet Selection -->
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Wallet Type</label>
+              <div class="flex gap-4">
+                <label 
+                  :class="[
+                    'flex items-center px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 border backdrop-blur-sm',
+                    wallet === 'keplr' ? 'bg-purple-500/20 border-purple-500' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200 dark:border-white/10'
+                  ]"
+                >
+                  <input type="radio" v-model="wallet" value="keplr" @change="onchange" class="sr-only" />
+                  <Icon icon="mdi:alpha-k-circle" class="text-xl mr-2" 
+                    :class="wallet === 'keplr' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'" 
+                  />
+                  <span :class="wallet === 'keplr' ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-400'">
+                    Keplr
+                  </span>
+                </label>
+                
+                <label 
+                  :class="[
+                    'flex items-center px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 border backdrop-blur-sm',
+                    wallet === 'metamask' ? 'bg-orange-500/20 border-orange-500' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200 dark:border-white/10'
+                  ]"
+                >
+                  <input type="radio" v-model="wallet" value="metamask" @change="onchange" class="sr-only" />
+                  <Icon icon="simple-icons:metamask" class="text-xl mr-2" 
+                    :class="wallet === 'metamask' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'" 
+                  />
+                  <span :class="wallet === 'metamask' ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-400'">
+                    MetaMask
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuration Display -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Chain Configuration</h3>
+              <button 
+                @click="$refs.configTextarea.select(); document.execCommand('copy')"
+                class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 hover:bg-white/70 dark:hover:bg-gray-600/50 transition-all duration-200"
+              >
+                <Icon icon="mdi:content-copy" class="text-lg text-gray-600 dark:text-gray-400" />
+                <span class="text-sm text-gray-600 dark:text-gray-400">Copy</span>
+              </button>
+            </div>
+            
+            <textarea 
+              ref="configTextarea"
+              v-model="conf" 
+              class="w-full p-6 rounded-2xl bg-gray-900/5 dark:bg-gray-700/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-200 resize-none"
+              rows="20"
+              readonly
+            ></textarea>
+          </div>
+
+          <!-- Action Section -->
+          <div class="mt-8 space-y-6">
+            <div class="flex flex-col sm:flex-row gap-4 items-center justify-center">
+              <button 
+                @click="suggest"
+                class="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+              >
+                <span class="relative z-10 flex items-center gap-2">
+                  <Icon icon="mdi:rocket-launch" class="text-xl" />
+                  Suggest {{ selected.chainName }} to {{ wallet === 'keplr' ? 'Keplr' : 'MetaMask' }}
+                </span>
+                <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+              </button>
+            </div>
+
+            <div v-if="error" class="p-4 rounded-xl bg-red-500/10 border border-red-500/20 backdrop-blur-sm">
+              <p class="text-red-600 dark:text-red-400 text-sm">{{ error }}</p>
+            </div>
+
+            <div class="text-center">
+              <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                If the chain is not officially supported on {{ wallet === 'keplr' ? 'Keplr' : 'MetaMask Snap' }}, 
+                you can submit these parameters to enable wallet integration.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ad Banner -->
+      <div class="backdrop-blur-md bg-white/95 dark:bg-gray-800/90 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none overflow-hidden">
+        <div class="p-6 flex justify-center">
+          <AdBanner id="suggest-banner-ad" unit="banner" width="970px" height="90px" />
+        </div>
       </div>
     </div>
-
-    <AdBanner id="suggest-banner-ad" unit="banner" width="970px" height="90px" />
   </div>
 </template>
+
+<style scoped>
+/* Gradient animation */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
+/* Slow pulse animation */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translate(var(--tw-translate-x), var(--tw-translate-y)) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(var(--tw-translate-x), var(--tw-translate-y)) scale(1.1);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+/* Custom select styling */
+select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Hover effects for interactive elements */
+button, select, textarea {
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Focus styles */
+:focus {
+  outline: none;
+}
+</style>

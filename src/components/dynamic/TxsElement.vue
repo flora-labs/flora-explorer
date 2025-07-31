@@ -4,6 +4,7 @@ import { decodeTxRaw } from '@cosmjs/proto-signing';
 import { computed } from '@vue/reactivity';
 import { hashTx } from '@/libs';
 import { useBlockchain, useFormatter } from '@/stores';
+import { Icon } from '@iconify/vue';
 const props = defineProps({
   value: { type: Array<string> },
 });
@@ -62,6 +63,11 @@ const chain = useBlockchain();
         </tr>
       </tbody>
     </table>
-    <div v-else class="text-center">No Transactions</div>
+    <div v-else class="flex items-center justify-center min-h-[100px] text-gray-500 dark:text-gray-400">
+      <div class="flex items-center gap-2">
+        <Icon icon="mdi:swap-horizontal-circle-outline" class="text-xl opacity-50" />
+        <p class="text-base">No Transactions</p>
+      </div>
+    </div>
   </div>
 </template>

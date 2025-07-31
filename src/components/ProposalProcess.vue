@@ -22,28 +22,78 @@ const veto = computed(() => format.calculatePercent(props.tally?.no_with_veto, t
 </script>
 
 <template>
-  <div class="progress rounded-[3px] h-6 text-xs flex items-center">
-    <div class="h-6 bg-yes flex items-center pl-2 text-white overflow-hidden" :style="`width: ${yes}`" :title="yes">
-      {{ yes }}
+  <div class="relative">
+    <!-- Progress Bar Container -->
+    <div class="relative h-8 bg-gradient-to-r from-gray-100 to-gray-50 dark:from-white/5 dark:to-white/10 rounded-full overflow-hidden border border-gray-200/50 dark:border-white/10 shadow-inner">
+      <!-- Yes Vote -->
+      <div 
+        class="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-green-500 flex items-center justify-center text-white text-xs font-semibold transition-all duration-500 ease-out hover:brightness-110"
+        :style="`width: ${yes}`" 
+        :title="`Yes: ${yes}`"
+      >
+        <span v-if="parseFloat(yes) > 10" class="drop-shadow-sm">{{ yes }}</span>
+      </div>
+      
+      <!-- No Vote -->
+      <div 
+        class="absolute inset-y-0 bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center text-white text-xs font-semibold transition-all duration-500 ease-out hover:brightness-110"
+        :style="`left: ${yes}; width: ${no}`" 
+        :title="`No: ${no}`"
+      >
+        <span v-if="parseFloat(no) > 10" class="drop-shadow-sm">{{ no }}</span>
+      </div>
+      
+      <!-- No With Veto -->
+      <div 
+        class="absolute inset-y-0 bg-gradient-to-r from-red-700 to-red-900 flex items-center justify-center text-white text-xs font-semibold transition-all duration-500 ease-out hover:brightness-110"
+        :style="`left: calc(${yes} + ${no}); width: ${veto}`" 
+        :title="`No With Veto: ${veto}`"
+      >
+        <span v-if="parseFloat(veto) > 10" class="drop-shadow-sm">{{ veto }}</span>
+      </div>
+      
+      <!-- Abstain -->
+      <div 
+        class="absolute inset-y-0 bg-gradient-to-r from-gray-400 to-gray-500 flex items-center justify-center text-white text-xs font-semibold transition-all duration-500 ease-out hover:brightness-110"
+        :style="`left: calc(${yes} + ${no} + ${veto}); width: ${abstain}`" 
+        :title="`Abstain: ${abstain}`"
+      >
+        <span v-if="parseFloat(abstain) > 10" class="drop-shadow-sm">{{ abstain }}</span>
+      </div>
+      
+      <!-- Animated shimmer effect -->
+      <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] animate-shimmer"></div>
     </div>
-    <div class="h-6 bg-no flex items-center text-white overflow-hidden" :style="`width: ${no}`" :title="no">
-      {{ no }}
-    </div>
-    <div class="h-6 bg-[#B71C1C] flex items-center text-white overflow-hidden" :style="`width: ${veto};`" :title="veto">
-      {{ veto }}
-    </div>
-    <div
-      class="h-6 bg-secondary flex items-center text-white overflow-hidden"
-      :style="`width: ${abstain}`"
-      :title="abstain"
-    >
-      {{ abstain }}
+    
+    <!-- Vote Labels -->
+    <div class="flex justify-between mt-2 text-xs">
+      <div class="flex items-center gap-1">
+        <div class="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-green-500"></div>
+        <span class="text-gray-600 dark:text-gray-400">Yes</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <div class="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-pink-500"></div>
+        <span class="text-gray-600 dark:text-gray-400">No</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <div class="w-3 h-3 rounded-full bg-gradient-to-r from-red-700 to-red-900"></div>
+        <span class="text-gray-600 dark:text-gray-400">Veto</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <div class="w-3 h-3 rounded-full bg-gradient-to-r from-gray-400 to-gray-500"></div>
+        <span class="text-gray-600 dark:text-gray-400">Abstain</span>
+      </div>
     </div>
   </div>
 </template>
 <style scoped>
-.progress {
-  overflow: hidden;
-  background-color: rgba(128, 128, 128, 0.178);
+@keyframes shimmer {
+  to {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s infinite;
 }
 </style>

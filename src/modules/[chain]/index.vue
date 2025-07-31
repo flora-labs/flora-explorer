@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useBlockchain, useFormatter, useTxDialog, useWalletStore, useStakingStore, useParamStore, useBankStore, useMintStore, useGovStore } from '@/stores';
+import { useBlockchain, useFormatter, useTxDialog, useWalletStore, useStakingStore, useParamStore, useBankStore, useMintStore, useGovStore, useBaseStore } from '@/stores';
 import { useDistributionStore } from '@/stores/useDistributionStore';
 import { onMounted, ref, watchEffect } from 'vue';
 import { computed } from '@vue/reactivity';
@@ -21,6 +21,7 @@ const bankStore = useBankStore();
 const mintStore = useMintStore();
 const govStore = useGovStore();
 const distributionStore = useDistributionStore();
+const baseStore = useBaseStore();
 
 // Create a reactive ref for supply
 const totalSupply = ref('0');
@@ -109,7 +110,7 @@ const floraStats = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen">
+  <div class="min-h-screen py-12">
     <!-- Background Effects -->
     <div class="fixed inset-0 -z-10">
       <!-- Light mode gradient - soft purple/blue gradient like Flora website -->
@@ -120,16 +121,13 @@ const floraStats = computed(() => {
       <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
     </div>
     
-    <!-- Main Container -->
-    <div class="container mx-auto px-4 py-8 relative">
-      <!-- Consistent Layout Wrapper -->
-      <div class="space-y-8">
-        <!-- Header Section - Wrapped in same grid as content -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div v-if="blockchain.current" class="lg:col-span-3 backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-8 shadow-lg dark:shadow-2xl">
+    <!-- Content -->
+    <div class="space-y-8">
+        <!-- Header Section -->
+        <div v-if="blockchain.current" class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-8 shadow-lg dark:shadow-2xl">
             <div class="flex justify-between items-start">
               <div>
-                <div class="flex items-center gap-4 mb-3">
+                <div class="flex items-center gap-4 mb-4">
                   <img src="/logo.svg" class="w-12 h-12" alt="Flora Logo" />
                   <h1 class="text-5xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
                     {{ blockchain.current?.prettyName || 'Flora' }}
@@ -166,11 +164,24 @@ const floraStats = computed(() => {
                 </a>
               </div>
             </div>
-          </div>
         </div>
 
         <!-- Top Statistics Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Block Height -->
+        <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Block Height</div>
+              <Icon icon="mdi:cube-outline" class="text-2xl text-amber-500/70 dark:text-amber-400/70" />
+            </div>
+            <div class="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+              #{{ baseStore.latest?.block?.header?.height || '0' }}
+            </div>
+          </div>
+        </div>
+        
         <!-- Total Supply -->
         <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
           <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
@@ -195,18 +206,6 @@ const floraStats = computed(() => {
           </div>
         </div>
         
-        <!-- Inflation -->
-        <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
-          <div class="relative">
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Inflation</div>
-              <Icon icon="mdi:chart-line" class="text-2xl text-amber-500/70 dark:text-amber-400/70" />
-            </div>
-            <div class="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">{{ floraStats.inflation }}</div>
-          </div>
-        </div>
-        
         <!-- Community Pool -->
         <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
           <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
@@ -221,7 +220,7 @@ const floraStats = computed(() => {
         </div>
 
         <!-- Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Main Content Area - 2 columns on large screens -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Stats Cards Section -->
@@ -331,7 +330,7 @@ const floraStats = computed(() => {
                 </div>
               </div>
               
-              <div class="grid grid-cols-1 gap-3">
+              <div class="grid grid-cols-1 gap-4">
                 <button class="w-full backdrop-blur-md bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-medium py-3 px-4 rounded-xl border border-blue-500/30 transition-all duration-200"
                         @click="dialog.open('send', {})">
                   {{ $t('account.send') }}
@@ -401,14 +400,42 @@ const floraStats = computed(() => {
           </div>
         </div>
       </div>
-      <!-- End Consistent Layout Wrapper -->
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Minimal custom styles - using Tailwind utilities primarily */
+/* Smooth transitions for interactive elements */
+.backdrop-blur-xl {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Subtle hover effect for cards */
+.backdrop-blur-xl:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Ensure smooth loading animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.space-y-8 > * {
+  animation: fadeIn 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.space-y-8 > *:nth-child(1) { animation-delay: 0s; }
+.space-y-8 > *:nth-child(2) { animation-delay: 0.1s; }
+.space-y-8 > *:nth-child(3) { animation-delay: 0.2s; }
 </style>
 
 <route>

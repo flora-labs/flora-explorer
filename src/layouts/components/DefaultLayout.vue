@@ -45,11 +45,16 @@ blockchain.$subscribe((m, s) => {
 
 const sidebarShow = ref(false);
 const sidebarOpen = ref(true);
+const sidebarCollapsed = ref(false);
 
 const changeOpen = (index: Number) => {
   if (index === 0) {
     sidebarOpen.value = !sidebarOpen.value;
   }
+};
+
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value;
 };
 const showDiscord = window.location.host.search('ping.pub') > -1;
 
@@ -87,7 +92,7 @@ onMounted(() => {
   nextTick(() => {
     // Force navigation background color after all CSS and themes have loaded
     const forceNavBackground = () => {
-      const navElements = document.querySelectorAll('.w-64.fixed.z-50.left-0.top-0.bottom-0.overflow-auto, .glass-nav');
+      const navElements = document.querySelectorAll('.fixed.z-50.left-0.top-0.bottom-0.overflow-auto, .glass-nav');
       navElements.forEach(el => {
         if (el instanceof HTMLElement) {
           el.style.setProperty('background', '#171d30', 'important');
@@ -127,8 +132,11 @@ onMounted(() => {
   <div class="bg-gray-100 dark:bg-[#171d30]">
     <!-- sidebar -->
     <div
-      class="w-64 fixed z-50 left-0 top-0 bottom-0 overflow-auto glass-nav glass-nav-solid-override"
-      :class="{ block: sidebarShow, 'hidden xl:!block': !sidebarShow }"
+      class="fixed z-50 left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible glass-nav glass-nav-solid-override transition-all duration-300"
+      :class="[
+        sidebarCollapsed ? 'w-20' : 'w-64',
+        { block: sidebarShow, 'hidden xl:!block': !sidebarShow }
+      ]"
       :style="{
         background: '#171d30 !important',
         backgroundColor: '#171d30 !important',
@@ -138,11 +146,19 @@ onMounted(() => {
         opacity: '1 !important'
       }"
     >
-      <div class="glass-nav-brand flex justify-between items-center">
-        <RouterLink to="/flora-testnet" class="flex items-center">
-          <img class="w-10 h-10 glass-nav-logo" src="../../assets/logo.svg" />
-          <h1 class="flex-1 ml-3 text-2xl font-semibold glass-nav-title">Flora</h1>
+      <div class="glass-nav-brand flex justify-between items-center relative overflow-visible">
+        <RouterLink to="/flora-devnet" class="flex items-center overflow-hidden"
+          :class="sidebarCollapsed ? 'justify-center w-full' : ''"
+        >
+          <img class="w-10 h-10 glass-nav-logo flex-shrink-0" src="../../assets/logo.svg" />
+          <h1 
+            class="ml-3 text-2xl font-semibold glass-nav-title transition-all duration-300 whitespace-nowrap"
+            :class="sidebarCollapsed ? 'opacity-0 w-0' : 'flex-1 opacity-100'"
+          >
+            Flora
+          </h1>
         </RouterLink>
+        
         <div
           class="pr-4 cursor-pointer xl:!hidden"
           @click="sidebarShow = false"
@@ -150,9 +166,11 @@ onMounted(() => {
           <Icon icon="mdi-close" class="text-2xl" />
         </div>
       </div>
+      <!-- Separator line in collapsed mode -->
+      <div v-if="sidebarCollapsed" class="w-12 h-px bg-gray-700 mx-auto mb-4"></div>
       <div v-for="(item, index) of blockchain.computedChainMenu" :key="index" class="px-2">
         <div
-          v-if="isNavGroup(item)"
+          v-if="isNavGroup(item) && (!sidebarCollapsed || index > 0)"
           :tabindex="index"
           class="collapse glass-nav-group mb-2 transition-all duration-300"
           :class="{
@@ -164,8 +182,9 @@ onMounted(() => {
           <input v-if="index > 0" type="checkbox" class="cursor-pointer !h-10 block" @click="changeOpen(index)" />
           <div
             class="collapse-title !py-3 px-4 flex items-center cursor-pointer glass-nav-item-hover transition-all duration-300"
+            :class="sidebarCollapsed ? 'justify-center' : ''"
           >
-            <div class="glass-icon-wrapper mr-2">
+            <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
               <Icon
                 v-if="item?.icon?.icon"
                 :icon="item?.icon?.icon"
@@ -176,81 +195,173 @@ onMounted(() => {
                 }"
               />
             </div>
-            <div v-if="item?.icon?.image" class="glass-icon-wrapper mr-3">
+            <div v-if="item?.icon?.image" class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-3'">
               <img :src="item?.icon?.image" class="w-6 h-6 rounded-full" />
             </div>
-            <div class="text-base capitalize flex-1 font-medium text-gray-300 whitespace-nowrap tracking-wide">
+            <div 
+              class="text-base capitalize flex-1 font-medium text-gray-300 whitespace-nowrap tracking-wide transition-all duration-300"
+              :class="sidebarCollapsed ? 'hidden' : 'block'"
+            >
               {{ item?.title }}
             </div>
             <div
-              v-if="item?.badgeContent"
+              v-if="item?.badgeContent && !sidebarCollapsed"
               class="mr-6 badge badge-sm text-white glass-badge backdrop-blur-md"
               :class="item?.badgeClass"
             >
               {{ item?.badgeContent }}
             </div>
           </div>
-          <div class="collapse-content">
+          <div class="collapse-content" v-if="!sidebarCollapsed">
             <div v-for="(el, key) of item?.children" class="menu w-full !p-0">
               <RouterLink
                 v-if="isNavLink(el)"
                 @click="sidebarShow = false"
-                class="glass-nav-item cursor-pointer flex items-center"
+                class="glass-nav-item cursor-pointer flex items-center group relative transition-all duration-200"
                 :class="{
-                  'active': selected($route, el),
+                  'bg-purple-500/10 border-l-2 border-purple-500': selected($route, el),
+                  'justify-center': sidebarCollapsed
                 }"
                 :to="el.to"
               >
-                <Icon
-                  v-if="!el?.icon?.image"
-                  icon="mdi:chevron-right"
-                  class="mr-2 ml-3 text-gray-500 transition-all duration-300"
-                  :class="{
-                    '!text-white': selected($route, el),
-                  }"
-                />
-                <div v-if="el?.icon?.image" class="glass-icon-wrapper mr-3 ml-4">
+                <div class="glass-icon-wrapper transition-all duration-300"
+                  :class="[
+                    sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3',
+                    selected($route, el) ? 'text-purple-400' : (el.iconColor || 'text-gray-400')
+                  ]"
+                >
+                  <Icon
+                    v-if="el?.icon?.icon"
+                    :icon="el.icon.icon"
+                    class="text-lg transition-all duration-300"
+                  />
                   <img
-                    :src="el?.icon?.image"
-                    class="w-6 h-6 rounded-full transition-all duration-300"
-                    :class="{
-                      'ring-2 ring-cyan-400 ring-offset-2 ring-offset-transparent': selected($route, el),
-                    }"
+                    v-else-if="el?.icon?.image"
+                    :src="el.icon.image"
+                    class="w-5 h-5 rounded-full"
+                  />
+                  <Icon
+                    v-else
+                    icon="mdi:circle-outline"
+                    class="text-lg"
                   />
                 </div>
                 <div
+                  v-if="!sidebarCollapsed"
                   class="text-sm capitalize text-gray-400 font-medium tracking-wide transition-all duration-300"
                   :class="{
-                    '!text-gray-100 font-semibold': selected($route, el),
+                    '!text-purple-300 font-semibold': selected($route, el),
                   }"
+                >
+                  {{ item?.title === 'Favorite' ? el?.title : $t(el?.title) }}
+                </div>
+                <!-- Tooltip for collapsed state -->
+                <div 
+                  v-if="sidebarCollapsed"
+                  class="absolute left-full ml-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-lg"
                 >
                   {{ item?.title === 'Favorite' ? el?.title : $t(el?.title) }}
                 </div>
               </RouterLink>
             </div>
             <div
-              v-if="index === 0 && dashboard.networkType === NetworkType.Testnet"
+              v-if="index === 0 && dashboard.networkType === NetworkType.Testnet && !sidebarCollapsed"
               class="menu w-full !p-0"
             >
               <RouterLink
-                class="glass-nav-subitem cursor-pointer px-3 py-2 flex items-center transition-all duration-300 group"
+                class="glass-nav-item cursor-pointer flex items-center group relative"
+                :class="{
+                  'justify-center': sidebarCollapsed
+                }"
                 :to="`/${blockchain.chainName}/faucet`"
               >
-                <Icon icon="mdi:chevron-right" class="mr-2 ml-3 text-gray-500 transition-all duration-300"></Icon>
-                <div class="text-sm capitalize text-gray-400 font-medium tracking-wide">Faucet</div>
-                <div class="badge badge-sm text-white glass-badge-pulse ml-auto">New</div>
+                <div class="glass-icon-wrapper transition-all duration-300 text-blue-300"
+                  :class="sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3'"
+                >
+                  <Icon icon="mdi:water" class="text-lg" />
+                </div>
+                <div v-if="!sidebarCollapsed" class="text-sm capitalize text-gray-400 font-medium tracking-wide">
+                  Faucet
+                </div>
+                <div v-if="!sidebarCollapsed" class="badge badge-sm text-white glass-badge-pulse ml-auto">New</div>
+                <!-- Tooltip for collapsed state -->
+                <div 
+                  v-if="sidebarCollapsed"
+                  class="absolute left-full ml-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-lg"
+                >
+                  Faucet
+                </div>
               </RouterLink>
             </div>
           </div>
         </div>
+        
+        <!-- Render nav items directly when collapsed -->
+        <template v-if="isNavGroup(item) && sidebarCollapsed && index === 0">
+          <template v-for="(el, key) of item?.children" :key="key">
+            <RouterLink
+              v-if="isNavLink(el)"
+              @click="sidebarShow = false"
+              class="glass-nav-item cursor-pointer flex items-center group relative justify-center mb-2 transition-all duration-200"
+              :class="{
+                'bg-purple-500/10 border-2 border-purple-500/50 rounded-xl': selected($route, el)
+              }"
+              :to="el.to"
+            >
+            <div class="glass-icon-wrapper transition-all duration-300"
+              :class="selected($route, el) ? 'text-purple-400' : (el.iconColor || 'text-gray-400')"
+            >
+              <Icon
+                v-if="el?.icon?.icon"
+                :icon="el.icon.icon"
+                class="text-lg transition-all duration-300"
+              />
+              <img
+                v-else-if="el?.icon?.image"
+                :src="el.icon.image"
+                class="w-5 h-5 rounded-full"
+              />
+              <Icon
+                v-else
+                icon="mdi:circle-outline"
+                class="text-lg"
+              />
+            </div>
+            <!-- Tooltip for collapsed state -->
+            <div 
+              class="absolute left-full ml-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-lg"
+            >
+              {{ $t(el?.title) }}
+            </div>
+          </RouterLink>
+          </template>
+          
+          <!-- Faucet item when collapsed -->
+          <RouterLink
+            v-if="dashboard.networkType === NetworkType.Testnet"
+            class="glass-nav-item cursor-pointer flex items-center group relative justify-center mb-2"
+            :to="`/${blockchain.chainName}/faucet`"
+          >
+            <div class="glass-icon-wrapper transition-all duration-300 text-blue-300">
+              <Icon icon="mdi:water" class="text-lg" />
+            </div>
+            <!-- Tooltip for collapsed state -->
+            <div 
+              class="absolute left-full ml-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-lg"
+            >
+              Faucet
+            </div>
+          </RouterLink>
+        </template>
 
         <RouterLink
           v-if="isNavLink(item)"
           :to="item?.to"
           @click="sidebarShow = false"
-          class="glass-nav-item cursor-pointer flex items-center mb-2 group"
+          class="glass-nav-item cursor-pointer flex items-center mb-2 group relative"
+          :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper mr-2">
+          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
             <Icon
               v-if="item?.icon?.icon"
               :icon="item?.icon?.icon"
@@ -261,21 +372,31 @@ onMounted(() => {
               }"
             />
           </div>
-          <div v-if="item?.icon?.image" class="glass-icon-wrapper mr-3">
+          <div v-if="item?.icon?.image" class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-3'">
             <img
               :src="item?.icon?.image"
               class="w-6 h-6 rounded-full"
             />
           </div>
-          <div class="text-base capitalize flex-1 font-medium text-gray-300 whitespace-nowrap tracking-wide">
+          <div 
+            class="text-base capitalize flex-1 font-medium text-gray-300 whitespace-nowrap tracking-wide transition-all duration-300"
+            :class="sidebarCollapsed ? 'hidden' : 'block'"
+          >
             {{ item?.title }}
           </div>
           <div
-            v-if="item?.badgeContent"
+            v-if="item?.badgeContent && !sidebarCollapsed"
             class="badge badge-sm text-white"
             :class="item?.badgeClass"
           >
             {{ item?.badgeContent }}
+          </div>
+          <!-- Tooltip when collapsed -->
+          <div 
+            v-if="sidebarCollapsed"
+            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
+          >
+            {{ item?.title }}
           </div>
         </RouterLink>
         <div
@@ -286,15 +407,28 @@ onMounted(() => {
         </div>
       </div>
       <div class="px-2 mt-4">
-        <div class="glass-nav-section">Tools</div>
+        <div class="glass-nav-section" v-if="!sidebarCollapsed">Tools</div>
         <RouterLink
           to="/wallet/suggest"
-          class="glass-nav-item flex items-center cursor-pointer mb-2 group"
+          class="glass-nav-item flex items-center cursor-pointer mb-2 group relative"
+          :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper mr-2">
-            <Icon icon="mdi:frequently-asked-questions" class="text-xl text-gray-400" />
+          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+            <Icon icon="mdi:wallet-plus" class="text-xl text-purple-400" />
           </div>
-          <div class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide">Wallet Helper</div>
+          <div 
+            class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
+            :class="sidebarCollapsed ? 'hidden' : 'block'"
+          >
+            Wallet Helper
+          </div>
+          <!-- Tooltip when collapsed -->
+          <div 
+            v-if="sidebarCollapsed"
+            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
+          >
+            Wallet Helper
+          </div>
         </RouterLink>
         <div
           v-if="showDiscord"
@@ -302,46 +436,109 @@ onMounted(() => {
         >
           {{ $t('module.sponsors') }}
         </div>
-        <Sponsors v-if="showDiscord" />
-        <div class="glass-nav-section">{{ $t('module.links') }}</div>
+        <Sponsors v-if="showDiscord && !sidebarCollapsed" />
+        <div class="glass-nav-section" v-if="!sidebarCollapsed">{{ $t('module.links') }}</div>
         <a
-          href="https://twitter.com/ping_pub"
+          href="https://twitter.com/flora_network"
           target="_blank"
-          class="glass-nav-item flex items-center cursor-pointer mb-2 group"
+          class="glass-nav-item flex items-center cursor-pointer mb-2 group relative"
+          :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper mr-2">
-            <Icon icon="mdi:twitter" class="text-xl text-gray-400" />
+          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+            <Icon icon="simple-icons:x" class="text-xl text-sky-400" />
           </div>
-          <div class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide">Twitter</div>
+          <div 
+            class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
+            :class="sidebarCollapsed ? 'hidden' : 'block'"
+          >
+            X (Twitter)
+          </div>
+          <!-- Tooltip when collapsed -->
+          <div 
+            v-if="sidebarCollapsed"
+            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
+          >
+            X (Twitter)
+          </div>
         </a>
         <a
           v-if="showDiscord"
           href="https://discord.com/invite/CmjYVSr6GW"
           target="_blank"
-          class="glass-nav-item flex items-center cursor-pointer mb-2 group"
+          class="glass-nav-item flex items-center cursor-pointer mb-2 group relative"
+          :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper mr-2">
+          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
             <Icon icon="mdi:discord" class="text-xl text-gray-400" />
           </div>
-          <div class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide">Discord</div>
+          <div 
+            class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
+            :class="sidebarCollapsed ? 'hidden' : 'block'"
+          >
+            Discord
+          </div>
+          <!-- Tooltip when collapsed -->
+          <div 
+            v-if="sidebarCollapsed"
+            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
+          >
+            Discord
+          </div>
         </a>
         <a
-          href="https://github.com/ping-pub/explorer/discussions"
+          href="https://flora.network"
           target="_blank"
-          class="glass-nav-item flex items-center cursor-pointer mb-2 group"
+          class="glass-nav-item flex items-center cursor-pointer mb-2 group relative"
+          :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper mr-2">
-            <Icon icon="mdi:frequently-asked-questions" class="text-xl text-gray-400" />
+          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+            <Icon icon="mdi:frequently-asked-questions" class="text-xl text-amber-400" />
           </div>
-          <div class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide">FAQ</div>
+          <div 
+            class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
+            :class="sidebarCollapsed ? 'hidden' : 'block'"
+          >
+            FAQ
+          </div>
+          <!-- Tooltip when collapsed -->
+          <div 
+            v-if="sidebarCollapsed"
+            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
+          >
+            FAQ
+          </div>
         </a>
       </div>
     </div>
-    <div class="xl:!ml-64 pt-4">
+    
+    <!-- Collapse Toggle Button -->
+    <button
+      @click="toggleSidebar"
+      class="fixed w-10 h-10 rounded-full bg-[#171d30] hover:bg-[#1e2437] border border-purple-500/30 hover:border-purple-500/50 flex items-center justify-center transition-all duration-300 xl:flex hover:scale-105 group"
+      :style="{ 
+        top: '30px',
+        left: sidebarCollapsed ? '80px' : '256px',
+        zIndex: 2001,
+        transform: 'translateX(-50%)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 0 12px rgba(147, 51, 234, 0.15)'
+      }"
+    >
+      <Icon 
+        :icon="sidebarCollapsed ? 'mdi:chevron-right' : 'mdi:chevron-left'" 
+        class="text-lg text-purple-400 group-hover:text-purple-300 transition-colors"
+      />
+    </button>
+    
+    <div 
+      class="pt-4 transition-all duration-300"
+      :class="sidebarCollapsed ? 'xl:!ml-20' : 'xl:!ml-64'"
+      style="overflow: visible !important"
+    >
       <!-- header -->
-      <div class="container mx-auto px-4 mb-4">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4" style="overflow: visible !important; position: relative; z-index: 100;">
         <div
-          class="flex items-center py-3 bg-base-100 rounded-2xl px-4"
+          class="flex items-center py-3 backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none px-6 relative z-[100]"
+          style="overflow: visible !important"
         >
           <div
             class="text-2xl pr-3 cursor-pointer xl:!hidden"
@@ -364,7 +561,7 @@ onMounted(() => {
 
       <!-- 👉 Pages -->
       <div style="min-height: calc(100vh - 180px)">
-        <div v-if="behind" class="container mx-auto px-4 mb-4">
+        <div v-if="behind" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
           <div class="alert alert-error">
             <div class="flex gap-2">
               <svg
@@ -390,7 +587,7 @@ onMounted(() => {
         </div>
         <RouterView v-slot="{ Component }">
           <Transition mode="out-in">
-            <div>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <AdBanner v-if="show_ad" />
               <Component :is="Component" />
             </div>
@@ -405,7 +602,7 @@ onMounted(() => {
 
 <style>
 /* CRITICAL: Force solid navigation background for production */
-.w-64.fixed.z-50.left-0.top-0.bottom-0.overflow-auto {
+.fixed.z-50.left-0.top-0.bottom-0.overflow-auto {
   background: #171d30 !important;
   background-color: #171d30 !important;
   background-image: none !important;
@@ -415,13 +612,23 @@ onMounted(() => {
 }
 
 /* Override glassmorphic theme for navigation */
-html[data-theme='glassmorphic'] .w-64.fixed.z-50.left-0.top-0.bottom-0.overflow-auto,
-[data-theme='glassmorphic'] .w-64.fixed.z-50.left-0.top-0.bottom-0.overflow-auto {
+html[data-theme='glassmorphic'] .fixed.z-50.left-0.top-0.bottom-0.overflow-auto,
+[data-theme='glassmorphic'] .fixed.z-50.left-0.top-0.bottom-0.overflow-auto {
   background: #171d30 !important;
   background-color: #171d30 !important;
   background-image: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Ensure width transitions work properly */
+.w-20, .w-64 {
+  transition: width 0.3s ease !important;
+}
+
+/* Allow overflow for collapse button */
+.glass-nav-brand {
+  overflow: visible !important;
 }
 
 /* Additional override for glass-nav class */
@@ -430,5 +637,32 @@ html[data-theme='glassmorphic'] .w-64.fixed.z-50.left-0.top-0.bottom-0.overflow-
   background-color: #171d30 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Collapsed nav adjustments */
+.w-20 .glass-nav-section {
+  display: none;
+}
+
+.w-20 .collapse-content {
+  display: none !important;
+}
+
+/* Smooth transitions for all nav elements */
+.glass-nav * {
+  transition: all 0.3s ease;
+}
+
+/* Active nav item styling */
+.glass-nav-item {
+  transition: all 0.2s ease;
+}
+
+.glass-nav-item.bg-purple-500\/10 {
+  background: rgba(147, 51, 234, 0.1) !important;
+}
+
+.glass-nav-item.bg-purple-500\/10:hover {
+  background: rgba(147, 51, 234, 0.15) !important;
 }
 </style>

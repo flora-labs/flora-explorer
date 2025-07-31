@@ -7,7 +7,7 @@
     "parameters": "Parameters",
     "uptime": "Uptime",
     "state-sync": "State Sync",
-    "cosmwasm": "Cosmwasm",
+    "evm": "EVM",
     "widget": "Widgets",
     "tx": "Transactions",
     "ibc": "IBC",
@@ -104,8 +104,8 @@
     "tips_description_1": "This tool is useful for validators to monitor who is onboard during an upgrade",
     "tips_description_2": "If you want to change the default rpc endpoint. make sure that `https` and `CORS` are enabled on your server."
   },
-  "cosmwasm": {
-    "title": "Cosmos Wasm Smart Contracts",
+  "evm": {
+    "title": "EVM Explorer",
     "code_id": "Code Id",
     "code_hash": "Code Hash",
     "creator": "Creator",

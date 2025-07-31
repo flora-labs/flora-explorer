@@ -12,24 +12,15 @@ const dashboard = useDashboard();
 
 const keywords = ref('');
 const chains = computed(() => {
-  if (keywords.value) {
-    const lowercaseKeywords = keywords.value.toLowerCase();
-
-    return Object.values(dashboard.chains).filter(
-      (x: ChainConfig) =>
-        x.chainName.toLowerCase().indexOf(lowercaseKeywords) > -1 ||
-        x.prettyName.toLowerCase().indexOf(lowercaseKeywords) > -1
-    );
-  } else {
-    return Object.values(dashboard.chains);
-  }
+  // Only show flora-devnet
+  return Object.values(dashboard.chains).filter(
+    (x: ChainConfig) => x.chainName === 'flora-devnet'
+  );
 });
 
 const featured = computed(() => {
-  const names = ['cosmos', 'osmosis', 'akash', 'celestia', 'evmos', 'injective', 'dydx', 'noble'];
-  return chains.value
-    .filter((x) => names.includes(x.chainName))
-    .sort((a, b) => names.indexOf(a.chainName) - names.indexOf(b.chainName));
+  // No featured chains except flora-devnet
+  return [];
 });
 
 const chainStore = useBlockchain();
@@ -100,17 +91,7 @@ const chainStore = useBlockchain();
     </div>
 
     <div class="text-center text-base mt-6 text-primary">
-      <h2 class="mb-6">{{ $t('pages.description') }}</h2>
-    </div>
-
-    <div class="flex items-center rounded-lg bg-base-100 border border-gray-200 dark:border-gray-700 mt-10">
-      <Icon icon="mdi:magnify" class="text-2xl text-gray-400 ml-3" />
-      <input
-        :placeholder="$t('pages.search_placeholder')"
-        class="px-4 h-10 bg-transparent flex-1 outline-none text-base"
-        v-model="keywords"
-      />
-      <div class="px-4 text-base hidden md:!block">{{ chains.length }}/{{ dashboard.length }}</div>
+      <h2 class="mb-6">Available Network</h2>
     </div>
 
     <div class="grid grid-cols-1 gap-4 mt-6 md:!grid-cols-3 lg:!grid-cols-4 2xl:!grid-cols-5">

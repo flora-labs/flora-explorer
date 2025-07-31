@@ -148,139 +148,182 @@ async function update() {
 </script>
 
 <template>
-  <div>
-    <!--  -->
-    <div class="bg-base-100 px-4 pt-3 pb-4 rounded shadow">
-      <div class="form-control">
-        <label class="input-group input-group-md w-full flex">
-          <!-- <input
-            type="text"
-            placeholder="Button on both side"
-            class="input input-bordered input-md w-full"
-            v-model="rpc"
-          /> -->
-          <select v-model="rpc" class="select select-bordered w-full flex-1">
+  <div class="space-y-6">
+    <!-- RPC Selector -->
+    <div class="backdrop-blur-xl bg-white/90 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden p-6">
+      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-full blur-2xl transform translate-x-24 -translate-y-24"></div>
+      <div class="relative">
+        <h2 class="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent mb-4">
+          Consensus Monitor
+        </h2>
+        <div class="flex gap-2">
+          <select v-model="rpc" class="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 dark:focus:ring-purple-400/20 transition-all duration-200">
             <option v-for="(item, index) in rpcList" :key="index">{{ item?.address }}/consensus_state</option>
           </select>
-          <button class="btn btn-primary" @click="onChange">
+          <button 
+            class="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg hover:shadow-xl hover:from-purple-600 hover:to-blue-600 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
+            @click="onChange"
+          >
             {{ $t('consensus.monitor') }}
           </button>
-        </label>
-      </div>
-      <div v-if="httpstatus !== 200" class="text-error mt-1">{{ httpstatus }}: {{ httpStatusText }}</div>
-    </div>
-    <!-- cards -->
-    <div class="mt-4" v-if="roundState['height/round/step']">
-      <div class="grid grid-cols-1 md:!grid-cols-4 auto-cols-auto gap-4 pb-4">
-        <div class="bg-base-100 px-4 py-3 rounded shadow flex justify-between items-center">
-          <div class="text-sm mb-1 flex flex-col truncate">
-            <h4 class="text-lg font-semibold text-main">{{ rate }}</h4>
-            <span class="text-md">{{ $t('consensus.onboard_rate') }}</span>
-          </div>
-          <div class="avatar placeholder">
-            <div class="bg-rose-100 text-neutral-content rounded-full w-12 h-12">
-              <span class="text-2xl text-error font-semibold">{{ $t('consensus.o') }}</span>
-            </div>
-          </div>
         </div>
-        <!-- Height -->
-        <div class="bg-base-100 px-4 py-3 rounded shadow flex justify-between items-center">
-          <div class="text-sm mb-1 flex flex-col truncate">
-            <h4 class="text-lg font-semibold text-main">{{ height }}</h4>
-            <span class="text-md">{{ $t('account.height') }}</span>
-          </div>
-          <div class="avatar placeholder">
-            <div class="bg-green-100 text-neutral-content rounded-full w-12 h-12">
-              <span class="text-2xl text-success font-semibold">{{ $t('consensus.h') }}</span>
-            </div>
-          </div>
-        </div>
-        <!-- Round -->
-        <div class="bg-base-100 px-4 py-3 rounded shadow flex justify-between items-center">
-          <div class="text-sm mb-1 flex flex-col truncate">
-            <h4 class="text-lg font-semibold text-main">{{ round }}</h4>
-            <span class="text-md">{{ $t('consensus.round') }}</span>
-          </div>
-          <div class="avatar placeholder">
-            <div class="bg-violet-100 text-neutral-content rounded-full w-12 h-12">
-              <span class="text-2xl text-primary font-semibold">{{ $t('consensus.r') }}</span>
-            </div>
-          </div>
-        </div>
-        <!-- Step -->
-        <div class="bg-base-100 px-4 py-3 rounded shadow flex justify-between items-center">
-          <div class="text-sm mb-1 flex flex-col truncate">
-            <h4 class="text-lg font-semibold text-main">{{ step }}</h4>
-            <span class="text-md">{{ $t('consensus.step') }}</span>
-          </div>
-          <div class="avatar placeholder">
-            <div class="bg-blue-100 text-neutral-content rounded-full w-12 h-12">
-              <span class="text-2xl text-info font-semibold">{{ $t('consensus.s') }}</span>
-            </div>
-          </div>
+        <div v-if="httpstatus !== 200" class="mt-3 px-4 py-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+          {{ httpstatus }}: {{ httpStatusText }}
         </div>
       </div>
     </div>
-    <!-- update -->
-    <div class="bg-base-100 p-4 rounded shadow" v-if="roundState['height/round/step']">
-      <div class="flex flex-1 flex-col truncate">
-        <h2 class="text-sm card-title text-error mb-6">{{ $t('consensus.updated_at') }} {{ newTime || '' }}</h2>
-        <div v-for="item in roundState.height_vote_set" :key="item.round">
-          <div class="text-xs mb-1">
-            {{ $t('consensus.round') }}: {{ item.round }}
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" v-if="roundState['height/round/step']">
+      <!-- Onboard Rate -->
+      <div class="backdrop-blur-xl bg-white/90 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-pink-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">{{ $t('consensus.onboard_rate') }}</div>
+            <div class="text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 dark:from-rose-400 dark:to-pink-400 bg-clip-text text-transparent">
+              {{ rate }}
+            </div>
           </div>
-          <div class="text-xs break-words">{{ item.prevotes_bit_array }}</div>
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center">
+            <span class="text-xl font-bold text-rose-600 dark:text-rose-400">{{ $t('consensus.o') }}</span>
+          </div>
+        </div>
+      </div>
 
-          <div class="flex flex-rows flex-wrap py-6">
+      <!-- Height -->
+      <div class="backdrop-blur-xl bg-white/90 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">{{ $t('account.height') }}</div>
+            <div class="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
+              {{ height }}
+            </div>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+            <span class="text-xl font-bold text-green-600 dark:text-green-400">{{ $t('consensus.h') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Round -->
+      <div class="backdrop-blur-xl bg-white/90 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-violet-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">{{ $t('consensus.round') }}</div>
+            <div class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent">
+              {{ round }}
+            </div>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 flex items-center justify-center">
+            <span class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ $t('consensus.r') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step -->
+      <div class="backdrop-blur-xl bg-white/90 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">{{ $t('consensus.step') }}</div>
+            <div class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+              {{ step }}
+            </div>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+            <span class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ $t('consensus.s') }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Voting Visualization -->
+    <div class="backdrop-blur-xl bg-white/90 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden p-6" v-if="roundState['height/round/step']">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-full blur-2xl transform translate-x-32 -translate-y-32"></div>
+      <div class="relative">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+            Validator Votes
+          </h3>
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            {{ $t('consensus.updated_at') }} <span class="font-medium text-gray-900 dark:text-white">{{ newTime || '' }}</span>
+          </div>
+        </div>
+        
+        <div v-for="item in roundState.height_vote_set" :key="item.round" class="mb-6">
+          <div class="mb-3">
+            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {{ $t('consensus.round') }} {{ item.round }}
+            </div>
+            <div class="text-xs font-mono text-gray-500 dark:text-gray-400 break-all bg-gray-100 dark:bg-black/20 rounded-lg p-2">
+              {{ item.prevotes_bit_array }}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             <div
-              class="w-48 rounded-3xl h-5 text-sm px-2 leading-5"
               v-for="(pre, i) in item.prevotes"
               :key="i"
-              size="sm"
-              style="margin: 2px"
+              class="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-white/5 dark:to-white/10 rounded-xl p-3 border border-gray-200 dark:border-white/10 hover:shadow-md transition-all duration-200"
             >
-              <span class="flex flex-rows justify-between">
-                <span class="truncate">{{ showName(i, 'nil-Vote') }} </span>
-                <span>
-                  <span
-                    class="tooltip"
-                    :data-tip="pre"
-                    :class="{
-                      'bg-green-400': String(pre).toLowerCase() !== 'nil-vote',
-                      'bg-red-400': String(pre).toLowerCase() === 'nil-vote',
-                    }"
-                    >&nbsp;</span
-                  >
-                  <span
-                    class="tooltip ml-1"
-                    :data-tip="item.precommits[i]"
-                    :class="{
-                      'bg-green-400': String(item.precommits[i]).toLowerCase() !== 'nil-vote',
-                      'bg-red-400': String(item.precommits[i]).toLowerCase() === 'nil-vote',
-                    }"
-                    >&nbsp;</span
-                  >
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-900 dark:text-white truncate flex-1">
+                  {{ showName(i, 'nil-Vote') }}
                 </span>
-              </span>
+              </div>
+              <div class="flex gap-1">
+                <div class="relative group">
+                  <div
+                    class="w-12 h-2 rounded-full transition-all duration-200"
+                    :class="{
+                      'bg-gradient-to-r from-green-500 to-emerald-500': String(pre).toLowerCase() !== 'nil-vote',
+                      'bg-gradient-to-r from-red-500 to-pink-500': String(pre).toLowerCase() === 'nil-vote',
+                    }"
+                  ></div>
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                    Prevote: {{ pre }}
+                  </div>
+                </div>
+                <div class="relative group">
+                  <div
+                    class="w-12 h-2 rounded-full transition-all duration-200"
+                    :class="{
+                      'bg-gradient-to-r from-green-500 to-emerald-500': String(item.precommits[i]).toLowerCase() !== 'nil-vote',
+                      'bg-gradient-to-r from-red-500 to-pink-500': String(item.precommits[i]).toLowerCase() === 'nil-vote',
+                    }"
+                  ></div>
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                    Precommit: {{ item.precommits[i] }}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="divider"></div>
     </div>
 
-    <!-- alert-info -->
-    <div class="text-[#00cfe8] bg-[rgba(0,207,232,0.12)] rounded shadow mt-4 alert-info">
-      <div class="drop-shadow-md px-4 pt-2 pb-2" style="box-shadow: rgba(0, 207, 232, 0.4) 0px 6px 15px -7px">
-        <h2 class="text-base font-semibold">{{ $t('consensus.tips') }}</h2>
-      </div>
-      <div class="px-4 py-4">
-        <ul style="list-style-type: disc" class="pl-8">
-          <li>
-            {{ $t('consensus.tips_description_1') }}
+    <!-- Tips Section -->
+    <div class="backdrop-blur-xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-3xl border border-blue-500/20 shadow-lg dark:shadow-none relative overflow-hidden p-6">
+      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl transform translate-x-24 -translate-y-24"></div>
+      <div class="relative">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ $t('consensus.tips') }}</h3>
+        </div>
+        <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+          <li class="flex items-start gap-2">
+            <span class="text-blue-600 dark:text-blue-400 mt-1">•</span>
+            <span>{{ $t('consensus.tips_description_1') }}</span>
           </li>
-          <li>
-            {{ $t('consensus.tips_description_2') }}
+          <li class="flex items-start gap-2">
+            <span class="text-blue-600 dark:text-blue-400 mt-1">•</span>
+            <span>{{ $t('consensus.tips_description_2') }}</span>
           </li>
         </ul>
       </div>

@@ -5,6 +5,7 @@ import { useStakingStore, useBaseStore, useBlockchain, useFormatter } from '@/st
 import UptimeBar from '@/components/UptimeBar.vue';
 import type { SlashingParam, SigningInfo, Block } from '@/types';
 import { consensusPubkeyToHexAddress, valconsToBase64 } from '@/libs';
+import { Icon } from '@iconify/vue';
 
 const props = defineProps(['chain']);
 
@@ -200,126 +201,281 @@ function changeTab(v: string) {
 </script>
 
 <template>
-  <div>
-    <div class="tabs tabs-boxed bg-transparent mb-4">
-      <a class="tab text-gray-400 capitalize" :class="{ 'tab-active': tab === '3' }" @click="changeTab('3')">{{
-        $t('uptime.overall')
-      }}</a>
-      <a class="tab text-gray-400 capitalize" :class="{ 'tab-active': tab === '2' }" @click="changeTab('2')">{{
-        $t('module.blocks')
-      }}</a>
-      <RouterLink :to="`/${chain}/uptime/customize`">
-        <a class="tab text-gray-400 capitalize">{{ $t('uptime.customize') }}</a>
-      </RouterLink>
-    </div>
-    <div class="bg-base-100 px-5 pt-5">
-      <div class="flex items-center gap-x-4">
-        <input
-          type="text"
-          v-model="keyword"
-          placeholder="Keywords to filter validators"
-          class="input input-sm w-full flex-1 border border-gray-200 dark:border-gray-600"
-        />
-      </div>
-
-      <!-- grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-4 mt-4 -->
-      <div :class="tab === '2' ? '' : 'hidden'">
-        <div class="flex flex-row flex-wrap gap-x-4 mt-4 justify-center">
-          <div v-for="(unit, i) in grid" :key="i">
-            <div class="flex justify-between py-0 w-[248px]">
-              <label class="truncate text-sm">
-                <span class="ml-1 text-black dark:text-white"
-                  >{{ i + 1 }}.{{ unit.moniker }}</span
-                >
-              </label>
-              <div
-                v-if="Number(unit?.missed_blocks_counter || 0) > 10"
-                class="badge badge-sm bg-transparent border-0 text-red-500 font-bold"
-              >
-                {{ unit?.missed_blocks_counter }}
-              </div>
-              <div
-                v-else
-                class="badge badge-sm bg-transparent text-green-600 border-0 font-bold"
-              >
-                {{ unit?.missed_blocks_counter }}
-              </div>
-            </div>
-            <UptimeBar :blocks="unit.blocks" />
+  <div class="space-y-6">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Total Validators -->
+      <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Validators</div>
+            <Icon icon="mdi:shield-check" class="text-2xl text-purple-500/70 dark:text-purple-400/70" />
+          </div>
+          <div class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            {{ validatorSet.length }}
           </div>
         </div>
-        <div class="mt-5 text-xs flex justify-center gap-2">
-          <span class="font-bold">{{ $t('uptime.legend') }}: </span>
-          <span class="bg-green-500">&nbsp;</span> {{ $t('uptime.committed') }}
-          <span class="bg-yellow-500">&nbsp;</span>
-          {{ $t('uptime.precommitted') }}
-          <span class="bg-red-500">&nbsp;</span> {{ $t('uptime.missed') }}
+      </div>
+
+      <!-- Window Size -->
+      <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Window Size</div>
+            <Icon icon="mdi:timer-outline" class="text-2xl text-blue-500/70 dark:text-blue-400/70" />
+          </div>
+          <div class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+            {{ slashingParam.signed_blocks_window || 0 }}
+          </div>
         </div>
       </div>
 
-      <div :class="tab === '3' ? '' : 'hidden'" class="overflow-x-auto">
-        <table class="table table-compact w-full mt-5">
-          <thead class="capitalize bg-base-200">
-            <tr>
-              <td>{{ $t('account.validator') }}</td>
-              <td class="text-right">{{ $t('module.uptime') }}</td>
-              <td>{{ $t('uptime.last_jailed_time') }}</td>
-              <td class="text-right">{{ $t('uptime.signed_precommits') }}</td>
-              <td class="text-right">{{ $t('uptime.start_height') }}</td>
-              <td>{{ $t('uptime.tombstoned') }}</td>
-            </tr>
-          </thead>
-          <tr v-for="(v, i) in grid" class="hover">
-            <td>
-              <div class="truncate max-w-sm">{{ i + 1 }}. {{ v.moniker }}</div>
-            </td>
-            <td class="text-right">
-              <span :class="v.uptime && v.uptime > 0.95 ? 'text-green-500' : 'text-red-500'">
-                <div class="tooltip" :data-tip="`${v.missed_blocks_counter} missing blocks`">
-                  {{ format.percent(v.uptime) }}
-                </div>
-              </span>
-            </td>
-            <td>
-              <span
-                v-if="v.signing && !v.signing.jailed_until.startsWith('1970')"
-              >
-                <div
-                  class="tooltip"
-                  :data-tip="format.toDay(v.signing.jailed_until, 'long')"
-                >
-                  <span>{{
-                    format.toDay(v.signing.jailed_until, 'from')
-                  }}</span>
-                </div>
-              </span>
-            </td>
-            <td class="text-xs text-right">
-              <span v-if="v.signing && v.signing.jailed_until.startsWith('1970')" class="text-right">{{
-                format.percent(Number(v.signing.index_offset) / (latest - Number(v.signing.start_height)))
-              }}</span>
-              {{ v.signing?.index_offset }}
-            </td>
-            <td class="text-right">{{ v.signing?.start_height }}</td>
-            <td class="capitalize">{{ v.signing?.tombstoned }}</td>
-          </tr>
-          <tfoot>
-            <tr>
-              <td colspan="2" class="text-right">
-                {{ $t('uptime.minimum_uptime') }}:
-                <span class="lowercase tooltip" :data-tip="`Window size: ${slashingParam.signed_blocks_window}`"
-                  ><span class="ml-2 btn btn-error btn-xs">{{
-                    format.percent(slashingParam.min_signed_per_window)
-                  }}</span>
-                </span>
-              </td>
-              <td colspan="8"></td>
-            </tr>
-          </tfoot>
-        </table>
+      <!-- Min Signed Per Window -->
+      <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Min Required</div>
+            <Icon icon="mdi:check-decagram" class="text-2xl text-green-500/70 dark:text-green-400/70" />
+          </div>
+          <div class="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
+            {{ format.percent(slashingParam.min_signed_per_window) }}
+          </div>
+        </div>
       </div>
 
-      <div class="h-6"></div>
+      <!-- Latest Block -->
+      <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Latest Block</div>
+            <Icon icon="mdi:cube-outline" class="text-2xl text-orange-500/70 dark:text-orange-400/70" />
+          </div>
+          <div class="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 dark:from-orange-400 dark:to-red-400 bg-clip-text text-transparent">
+            #{{ latest.toLocaleString() }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-full blur-3xl transform translate-x-32 -translate-y-32"></div>
+      
+      <!-- Header with tabs -->
+      <div class="relative p-6 border-b border-gray-200 dark:border-white/10">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <!-- Tab Navigation -->
+          <div class="flex gap-2">
+            <button 
+              class="px-4 py-2 rounded-xl font-medium transition-all duration-200"
+              :class="tab === '2' 
+                ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30' 
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'"
+              @click="changeTab('2')"
+            >
+              <Icon icon="mdi:view-grid" class="inline-block mr-2" />
+              {{ $t('module.blocks') }}
+            </button>
+            <button 
+              class="px-4 py-2 rounded-xl font-medium transition-all duration-200"
+              :class="tab === '3' 
+                ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30' 
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'"
+              @click="changeTab('3')"
+            >
+              <Icon icon="mdi:chart-line" class="inline-block mr-2" />
+              {{ $t('uptime.overall') }}
+            </button>
+            <RouterLink :to="`/${chain}/uptime/customize`">
+              <button class="px-4 py-2 rounded-xl font-medium bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 transition-all duration-200">
+                <Icon icon="mdi:cog-outline" class="inline-block mr-2" />
+                {{ $t('uptime.customize') }}
+              </button>
+            </RouterLink>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative w-full sm:w-auto">
+            <input
+              type="text"
+              v-model="keyword"
+              placeholder="Search validators..."
+              class="w-full sm:w-64 px-4 py-2 pl-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 dark:focus:ring-purple-400/20 transition-all duration-200 text-sm"
+            />
+            <Icon icon="mdi:magnify" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Blocks View -->
+      <div :class="tab === '2' ? '' : 'hidden'" class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          <div v-for="(unit, i) in grid" :key="i" 
+            class="bg-gray-50 dark:bg-white/5 rounded-2xl p-4 hover:bg-gray-100 dark:hover:bg-white/10 transition-all duration-200"
+          >
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ i + 1 }}.</span>
+                <span class="font-medium text-sm text-gray-900 dark:text-white truncate">
+                  {{ unit.moniker }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div v-if="unit.uptime" 
+                  class="text-xs font-medium"
+                  :class="unit.uptime > 0.95 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                >
+                  {{ format.percent(unit.uptime) }}
+                </div>
+                <div
+                  class="px-2 py-1 rounded-lg text-xs font-bold"
+                  :class="Number(unit?.missed_blocks_counter || 0) > 10 
+                    ? 'bg-red-500/10 text-red-600 dark:text-red-400' 
+                    : 'bg-green-500/10 text-green-600 dark:text-green-400'"
+                >
+                  {{ unit?.missed_blocks_counter || 0 }}
+                </div>
+              </div>
+            </div>
+            <div class="p-2 bg-white dark:bg-black/20 rounded-xl">
+              <UptimeBar :blocks="unit.blocks" />
+            </div>
+          </div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-green-500 rounded"></div>
+            <span class="text-gray-600 dark:text-gray-400">{{ $t('uptime.committed') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-yellow-500 rounded"></div>
+            <span class="text-gray-600 dark:text-gray-400">{{ $t('uptime.precommitted') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-red-500 rounded"></div>
+            <span class="text-gray-600 dark:text-gray-400">{{ $t('uptime.missed') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overall Statistics View -->
+      <div :class="tab === '3' ? '' : 'hidden'" class="p-6">
+        <div class="overflow-x-auto">
+          <table class="table w-full">
+            <thead>
+              <tr class="border-b border-gray-200 dark:border-white/10">
+                <th class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-4 text-left">
+                  {{ $t('account.validator') }}
+                </th>
+                <th class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-4 text-right">
+                  {{ $t('module.uptime') }}
+                </th>
+                <th class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-4">
+                  {{ $t('uptime.last_jailed_time') }}
+                </th>
+                <th class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-4 text-right">
+                  {{ $t('uptime.signed_precommits') }}
+                </th>
+                <th class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-4 text-right">
+                  {{ $t('uptime.start_height') }}
+                </th>
+                <th class="text-xs uppercase font-semibold text-gray-600 dark:text-gray-400 py-3 px-4">
+                  {{ $t('uptime.tombstoned') }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(v, i) in grid" :key="i"
+                class="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors duration-200"
+              >
+                <td class="py-4 px-4">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ i + 1 }}.</span>
+                    <span class="font-medium text-sm text-gray-900 dark:text-white truncate max-w-xs">
+                      {{ v.moniker }}
+                    </span>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <span 
+                      class="font-semibold text-sm"
+                      :class="v.uptime && v.uptime > 0.95 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                    >
+                      {{ format.percent(v.uptime) }}
+                    </span>
+                    <div
+                      class="px-2 py-0.5 rounded-md text-xs font-medium"
+                      :class="Number(v?.missed_blocks_counter || 0) > 10 
+                        ? 'bg-red-500/10 text-red-600 dark:text-red-400' 
+                        : 'bg-green-500/10 text-green-600 dark:text-green-400'"
+                    >
+                      {{ v.missed_blocks_counter || 0 }} missed
+                    </div>
+                  </div>
+                </td>
+                <td class="py-4 px-4">
+                  <span v-if="v.signing && !v.signing.jailed_until.startsWith('1970')"
+                    class="text-sm text-orange-600 dark:text-orange-400"
+                  >
+                    <div class="tooltip" :data-tip="format.toDay(v.signing.jailed_until, 'long')">
+                      {{ format.toDay(v.signing.jailed_until, 'from') }}
+                    </div>
+                  </span>
+                  <span v-else class="text-sm text-gray-400">-</span>
+                </td>
+                <td class="py-4 px-4 text-right">
+                  <div class="text-sm">
+                    <div v-if="v.signing && v.signing.jailed_until.startsWith('1970')" 
+                      class="text-xs text-gray-500 dark:text-gray-400"
+                    >
+                      {{ format.percent(Number(v.signing.index_offset) / (latest - Number(v.signing.start_height))) }}
+                    </div>
+                    <div class="font-mono text-gray-900 dark:text-white">
+                      {{ v.signing?.index_offset || '-' }}
+                    </div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-right">
+                  <span class="text-sm font-mono text-gray-900 dark:text-white">
+                    {{ v.signing?.start_height || '-' }}
+                  </span>
+                </td>
+                <td class="py-4 px-4">
+                  <span v-if="v.signing?.tombstoned" 
+                    class="px-2 py-1 rounded-lg text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400"
+                  >
+                    Yes
+                  </span>
+                  <span v-else class="text-sm text-gray-400">No</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Footer Info -->
+        <div class="mt-6 flex items-center justify-between">
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            Showing {{ grid.length }} validators
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('uptime.minimum_uptime') }}:</span>
+            <span class="px-3 py-1 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 font-semibold text-sm">
+              {{ format.percent(slashingParam.min_signed_per_window) }}
+            </span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              (Window: {{ slashingParam.signed_blocks_window }} blocks)
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -332,8 +488,3 @@ function changeTab(v: string) {
   }
 </route>
 
-<style lang="scss">
-.v-field--variant-outlined .v-field__outline__notch {
-  border-width: 0 !important;
-}
-</style>

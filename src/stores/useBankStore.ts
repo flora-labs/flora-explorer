@@ -30,8 +30,8 @@ export const useBankStore = defineStore('bankstore', {
         // Check if this is Flora chain (doesn't implement supply by denom endpoint)
         const isFlora = this.blockchain.current?.chainName === 'flora' || 
                        this.blockchain.chainName === 'flora' ||
-                       this.blockchain.chainName === 'flora-testnet' ||
-                       this.blockchain.current?.chainName === 'flora-testnet' ||
+                       this.blockchain.chainName === 'flora-devnet' ||
+                       this.blockchain.current?.chainName === 'flora-devnet' ||
                        denom === 'uflora';
         
         if (isFlora) {

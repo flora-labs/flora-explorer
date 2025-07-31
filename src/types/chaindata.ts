@@ -61,6 +61,10 @@ export interface LocalChainConfig {
     address_limit: number;
     fees: string;
   };
+  evm?: {
+    chainId: string;
+    rpc: string[] | Endpoint[];
+  };
 }
 
 // Chain config structure of cosmos.directory
@@ -138,5 +142,9 @@ export interface ChainConfig {
     ip_limit: number;
     address_limit: number;
     fees: string;
+  };
+  evm?: {
+    chainId: string;
+    rpc: Endpoint[];
   };
 }

@@ -252,439 +252,668 @@ function mapDelegators(messages: any[]) {
 }
 </script>
 <template>
-  <div>
-    <div class="bg-base-100 px-4 pt-3 pb-4 rounded shadow border-indigo-500">
-      <div class="flex flex-col lg:!flex-row pt-2 pb-1">
-        <div class="flex-1">
-          <div class="flex">
-            <div class="avatar mr-4 relative w-24 rounded-lg overflow-hidden">
-              <div class="w-24 rounded-lg absolute opacity-10"></div>
-              <div class="w-24 rounded-lg">
-                <img
-                  v-if="identity && avatars[identity] !== 'undefined'"
-                  v-lazy="logo(identity)"
-                  class="object-contain"
-                  @error="
-                    (e) => {
-                      loadAvatar(identity);
-                    }
-                  "
-                />
-                <Icon v-else class="text-8xl" :icon="`mdi-help-circle-outline`" />
-              </div>
-            </div>
-            <div class="mx-2">
-              <h4>{{ v.description?.moniker }}</h4>
-              <div class="text-sm mb-4">
-                {{ v.description?.identity || '-' }}
-              </div>
-              <label
-                for="delegate"
-                class="btn btn-primary btn-sm w-full"
-                @click="
-                  dialog.open('delegate', {
-                    validator_address: v.operator_address,
-                  })
-                "
-                >{{ $t('account.btn_delegate') }}</label
-              >
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <!-- Validator Header Card -->
+    <div class="backdrop-blur-xl bg-gradient-to-br from-white/95 via-purple-50/90 to-blue-50/90 dark:from-white/5 dark:via-purple-900/10 dark:to-blue-900/10 rounded-2xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-400/20 via-blue-400/15 to-pink-400/20 rounded-full blur-3xl transform translate-x-32 -translate-y-32 animate-pulse-slow"></div>
+      <div class="absolute bottom-0 left-0 w-56 h-56 bg-gradient-to-tr from-blue-400/20 via-indigo-400/15 to-purple-400/20 rounded-full blur-3xl transform -translate-x-28 translate-y-28 animate-pulse-slow" style="animation-delay: 2s"></div>
+      
+      <div class="relative p-6">
+        <!-- Header with Avatar and Name -->
+        <div class="flex items-start gap-6 mb-6">
+          <!-- Avatar -->
+          <div class="relative w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-sm border border-purple-500/30 shadow-lg flex-shrink-0">
+            <img
+              v-if="identity && avatars[identity] !== 'undefined'"
+              v-lazy="logo(identity)"
+              class="w-full h-full object-cover"
+              @error="(e) => { loadAvatar(identity); }"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center">
+              <Icon icon="mdi:account-circle" class="text-4xl text-purple-600 dark:text-purple-400" />
             </div>
           </div>
-          <div class="m-4 text-sm">
-            <p class="text-sm mb-3 font-medium">{{ $t('staking.about_us') }}</p>
-            <div class="card-list">
-              <div class="flex items-center mb-2">
-                <Icon icon="mdi-web" class="text-xl mr-1" />
-                <span class="font-bold mr-2"
-                  >{{ $t('staking.website') }}:
-                </span>
-                <a
-                  :href="v?.description?.website || '#'"
-                  :class="v?.description?.website ? 'cursor-pointer' : 'cursor-default'"
-                >
-                  {{ v.description?.website || '-' }}
-                </a>
-              </div>
-              <div class="flex items-center">
-                <Icon icon="mdi-email-outline" class="text-xl mr-1" />
-                <span class="font-bold mr-2"
-                  >{{ $t('staking.contact') }}:
-                </span>
-                <a
-                  v-if="v.description?.security_contact"
-                  :href="'mailto:' + v.description.security_contact || '#'"
-                  class="cursor-pointer"
-                >
-                  {{ v.description?.security_contact || '-' }}
-                </a>
-              </div>
-            </div>
-            <p class="text-sm mt-4 mb-3 font-medium">
-              {{ $t('staking.validator_status') }}
+          
+          <!-- Name and Delegate Button -->
+          <div class="flex-1">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 dark:from-purple-400 dark:via-blue-400 dark:to-pink-400 bg-clip-text text-transparent mb-1">
+              {{ v.description?.moniker }}
+            </h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              {{ v.description?.identity || '-' }}
             </p>
-            <div class="card-list">
-              <div class="flex items-center mb-2">
-                <Icon icon="mdi-shield-account-outline" class="text-xl mr-1" />
-                <span class="font-bold mr-2">{{ $t('staking.status') }}: </span
-                ><span>
-                  {{ String(v.status).replace('BOND_STATUS_', '') }}
-                </span>
-              </div>
-              <div class="flex items-center">
-                <Icon icon="mdi-shield-alert-outline" class="text-xl mr-1" />
-                <span class="font-bold mr-2">{{ $t('staking.jailed') }}: </span>
-                <span> {{ v.jailed || '-' }} </span>
-              </div>
-            </div>
-            <p class="text-sm mt-4 mb-3 font-medium">
-              {{ $t('staking.liquid_staking') }}
-            </p>
-            <div class="card-list">
-              <div class="flex items-center mb-2">
-                <Icon icon="mdi-lock" class="text-xl mr-1" />
-                <span class="font-bold mr-2">{{ $t('staking.validator_bond_share') }}: </span>
-                <span>
-                  {{ format.formatToken({ amount: v.validator_bond_shares, denom: staking.params.bond_denom }, false) }}
-                </span>
-              </div>
-              <div class="flex items-center">
-                <Icon icon="mdi-waves-arrow-right" class="text-xl mr-1" />
-                <span class="font-bold mr-2"
-                  >{{ $t('staking.liquid_staking_shares') }}:
-                </span>
-                <span>
-                  {{ format.formatToken({ amount: v.liquid_shares, denom: staking.params.bond_denom }, false) }}
-                </span>
-              </div>
-            </div>
+            <button
+              @click="dialog.open('delegate', { validator_address: v.operator_address })"
+              class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              <Icon icon="mdi:plus-circle" class="inline-block mr-1" />
+              {{ $t('account.btn_delegate') }}
+            </button>
           </div>
         </div>
-        <div class="flex-1">
-          <div class="flex flex-col mt-10">
-            <div class="flex mb-2">
-              <div class="flex items-center justify-center rounded w-10 h-10" style="border: 1px solid #666">
-                <Icon icon="mdi-coin" class="text-3xl" />
+        
+        <!-- Combined Info and Stats Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Left Column: Info -->
+          <div class="lg:col-span-7 space-y-3">
+            <!-- About Us and Description Combined -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- About Us -->
+              <div>
+                <h3 class="text-xs font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1">
+                  <div class="p-1 rounded bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
+                    <Icon icon="mdi:information" class="text-xs text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  {{ $t('staking.about_us') }}
+                </h3>
+                <div class="space-y-2 bg-gradient-to-br from-white/50 to-purple-50/30 dark:from-white/5 dark:to-purple-900/5 rounded-lg p-2.5 border border-gray-200/30 dark:border-white/5">
+                  <div class="flex items-center gap-2">
+                    <Icon icon="mdi:web" class="text-xs text-blue-600 dark:text-blue-400" />
+                    <a
+                      :href="v?.description?.website || '#'"
+                      :class="v?.description?.website ? 'text-xs text-blue-600 dark:text-blue-400 hover:underline truncate block' : 'text-xs text-gray-500'"
+                    >
+                      {{ v.description?.website || '-' }}
+                    </a>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <Icon icon="mdi:email-outline" class="text-xs text-emerald-600 dark:text-emerald-400" />
+                    <a
+                      v-if="v.description?.security_contact"
+                      :href="'mailto:' + v.description.security_contact"
+                      class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline truncate block"
+                    >
+                      {{ v.description?.security_contact }}
+                    </a>
+                    <span v-else class="text-xs text-gray-500">-</span>
+                  </div>
+                </div>
               </div>
-              <div class="ml-3 flex flex-col justify-center">
-                <h4>
-                  {{
-                    format.formatToken2({
-                      amount: v.tokens,
-                      denom: staking.params.bond_denom,
-                    })
-                  }}
-                </h4>
-                <span class="text-sm">{{ $t('staking.total_bonded') }}</span>
-              </div>
-            </div>
-            <div class="flex mb-2">
-              <div class="flex items-center justify-center rounded w-10 h-10" style="border: 1px solid #666">
-                <Icon icon="mdi-percent" class="text-3xl" />
-              </div>
-              <div class="ml-3 flex flex-col justify-center">
-                <h4>{{ format.formatToken(selfBonded.balance) }} ({{ selfRate }})</h4>
-                <span class="text-sm">{{ $t('staking.self_bonded') }}</span>
-              </div>
-            </div>
-
-            <div class="flex mb-2">
-              <div class="flex items-center justify-center rounded w-10 h-10" style="border: 1px solid #666">
-                <Icon icon="mdi-account-tie" class="text-3xl" />
-              </div>
-
-              <div class="ml-3 flex flex-col">
-                <h4>{{ v.min_self_delegation }} {{ staking.params.bond_denom }}</h4>
-                <span class="text-sm">{{ $t('staking.min_self') }}</span>
-              </div>
-            </div>
-            <div class="flex mb-2">
-              <div class="flex items-center justify-center rounded w-10 h-10" style="border: 1px solid #666">
-                <Icon icon="mdi-finance" class="text-3xl" />
-              </div>
-              <div class="ml-3 flex flex-col justify-center">
-                <h4>{{ apr }}</h4>
-                <span class="text-sm">{{ $t('staking.annual_profit') }}</span>
-              </div>
-            </div>
-
-            <div class="flex mb-2">
-              <div class="flex items-center justify-center rounded w-10 h-10" style="border: 1px solid #666">
-                <Icon icon="mdi:arrow-down-bold-circle-outline" class="text-3xl" />
-              </div>
-              <div class="ml-3 flex flex-col justify-center">
-                <h4>{{ v.unbonding_height }}</h4>
-                <span class="text-sm">{{
-                  $t('staking.unbonding_height')
-                }}</span>
+              
+              <!-- Description -->
+              <div v-if="v.description?.details">
+                <h3 class="text-xs font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1">
+                  <div class="p-1 rounded bg-gradient-to-br from-gray-500/20 to-gray-600/20">
+                    <Icon icon="mdi:text" class="text-xs text-gray-600 dark:text-gray-400" />
+                  </div>
+                  Description
+                </h3>
+                <div class="bg-gradient-to-br from-white/50 to-gray-50/30 dark:from-white/5 dark:to-gray-900/5 rounded-lg p-2.5 border border-gray-200/30 dark:border-white/5">
+                  <p class="text-xs text-gray-700 dark:text-gray-300 line-clamp-3">{{ v.description?.details }}</p>
+                </div>
               </div>
             </div>
-
-            <div class="flex mb-2">
-              <div class="flex items-center justify-center rounded w-10 h-10" style="border: 1px solid #666">
-                <Icon icon="mdi-clock" class="text-3xl" />
+            
+            <!-- Validator Status & Liquid Staking Combined -->
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Validator Status -->
+              <div>
+                <h3 class="text-xs font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1">
+                  <div class="p-1 rounded bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+                    <Icon icon="mdi:shield-check" class="text-xs text-amber-600 dark:text-amber-400" />
+                  </div>
+                  {{ $t('staking.validator_status') }}
+                </h3>
+                <div class="space-y-2 bg-gradient-to-br from-white/50 to-amber-50/30 dark:from-white/5 dark:to-amber-900/5 rounded-lg p-2.5 border border-gray-200/30 dark:border-white/5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1">
+                      <Icon icon="mdi:shield-account-outline" class="text-xs text-amber-600 dark:text-amber-400" />
+                      <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ $t('staking.status') }}</span>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                      :class="v.status === 'BOND_STATUS_BONDED' 
+                        ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                        : 'bg-gradient-to-r from-gray-500/20 to-gray-600/20 text-gray-700 dark:text-gray-300 border border-gray-500/30'"
+                    >
+                      {{ String(v.status).replace('BOND_STATUS_', '') }}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1">
+                      <Icon icon="mdi:shield-alert-outline" class="text-xs text-red-600 dark:text-red-400" />
+                      <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ $t('staking.jailed') }}</span>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                      :class="v.jailed 
+                        ? 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-700 dark:text-red-300 border border-red-500/30'
+                        : 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'"
+                    >
+                      {{ v.jailed ? 'Yes' : 'No' }}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div class="ml-3 flex flex-col justify-center">
-                <h4 v-if="v.unbonding_time && !v.unbonding_time.startsWith('1970')">
-                  {{ format.toDay(v.unbonding_time, 'from') }}
-                </h4>
-                <h4 v-else>-</h4>
-                <span class="text-sm">{{ $t('staking.unbonding_time') }}</span>
+              
+              <!-- Liquid Staking -->
+              <div>
+                <h3 class="text-xs font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1">
+                  <div class="p-1 rounded bg-gradient-to-br from-blue-500/20 to-indigo-500/20">
+                    <Icon icon="mdi:water" class="text-xs text-blue-600 dark:text-blue-400" />
+                  </div>
+                  {{ $t('staking.liquid_staking') }}
+                </h3>
+                <div class="space-y-2 bg-gradient-to-br from-white/50 to-blue-50/30 dark:from-white/5 dark:to-blue-900/5 rounded-lg p-2.5 border border-gray-200/30 dark:border-white/5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1">
+                      <Icon icon="mdi:lock" class="text-xs text-blue-600 dark:text-blue-400" />
+                      <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Bond Share</span>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-900 dark:text-white">
+                      {{ format.formatToken({ amount: v.validator_bond_shares, denom: staking.params.bond_denom }, false) }}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1">
+                      <Icon icon="mdi:waves-arrow-right" class="text-xs text-cyan-600 dark:text-cyan-400" />
+                      <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Liquid Shares</span>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-900 dark:text-white">
+                      {{ format.formatToken({ amount: v.liquid_shares, denom: staking.params.bond_denom }, false) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Column: Stats -->
+          <div class="lg:col-span-5">
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Total Bonded -->
+              <div class="backdrop-blur-sm bg-gradient-to-br from-white/70 to-purple-50/70 dark:from-white/10 dark:to-purple-900/10 rounded-xl border border-purple-200/50 dark:border-purple-500/20 p-4 hover:from-white/90 hover:to-purple-100/90 dark:hover:from-white/15 dark:hover:to-purple-900/15 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="p-2 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+                    <Icon icon="mdi:coin" class="text-lg text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <p class="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">{{ $t('staking.total_bonded') }}</p>
+                </div>
+                <p class="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                  {{ format.formatToken2({ amount: v.tokens, denom: staking.params.bond_denom }) }}
+                </p>
+              </div>
+              
+              <!-- Self Bonded -->
+              <div class="backdrop-blur-sm bg-gradient-to-br from-white/70 to-blue-50/70 dark:from-white/10 dark:to-blue-900/10 rounded-xl border border-blue-200/50 dark:border-blue-500/20 p-4 hover:from-white/90 hover:to-blue-100/90 dark:hover:from-white/15 dark:hover:to-blue-900/15 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+                    <Icon icon="mdi:percent" class="text-lg text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <p class="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">{{ $t('staking.self_bonded') }}</p>
+                </div>
+                <p class="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                  {{ selfRate }}
+                </p>
+                <p class="text-xs text-gray-600 dark:text-gray-400">{{ format.formatToken(selfBonded.balance) }}</p>
+              </div>
+              
+              <!-- Min Self Delegation -->
+              <div class="backdrop-blur-sm bg-gradient-to-br from-white/70 to-indigo-50/70 dark:from-white/10 dark:to-indigo-900/10 rounded-xl border border-indigo-200/50 dark:border-indigo-500/20 p-4 hover:from-white/90 hover:to-indigo-100/90 dark:hover:from-white/15 dark:hover:to-indigo-900/15 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="p-2 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
+                    <Icon icon="mdi:account-tie" class="text-lg text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <p class="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">{{ $t('staking.min_self') }}</p>
+                </div>
+                <p class="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                  {{ v.min_self_delegation }}
+                </p>
+                <p class="text-xs text-gray-600 dark:text-gray-400">{{ staking.params.bond_denom }}</p>
+              </div>
+              
+              <!-- APR -->
+              <div class="backdrop-blur-sm bg-gradient-to-br from-white/70 to-emerald-50/70 dark:from-white/10 dark:to-emerald-900/10 rounded-xl border border-emerald-200/50 dark:border-emerald-500/20 p-4 hover:from-white/90 hover:to-emerald-100/90 dark:hover:from-white/15 dark:hover:to-emerald-900/15 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="p-2 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20">
+                    <Icon icon="mdi:finance" class="text-lg text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <p class="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">{{ $t('staking.annual_profit') }}</p>
+                </div>
+                <p class="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 dark:from-emerald-400 dark:to-green-400 bg-clip-text text-transparent">
+                  {{ apr }}
+                </p>
+              </div>
+              
+              <!-- Unbonding Height -->
+              <div class="backdrop-blur-sm bg-gradient-to-br from-white/70 to-amber-50/70 dark:from-white/10 dark:to-amber-900/10 rounded-xl border border-amber-200/50 dark:border-amber-500/20 p-4 hover:from-white/90 hover:to-amber-100/90 dark:hover:from-white/15 dark:hover:to-amber-900/15 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="p-2 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+                    <Icon icon="mdi:arrow-down-bold-circle-outline" class="text-lg text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <p class="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">{{ $t('staking.unbonding_height') }}</p>
+                </div>
+                <p class="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+                  {{ v.unbonding_height || '-' }}
+                </p>
+              </div>
+              
+              <!-- Unbonding Time -->
+              <div class="backdrop-blur-sm bg-gradient-to-br from-white/70 to-red-50/70 dark:from-white/10 dark:to-red-900/10 rounded-xl border border-red-200/50 dark:border-red-500/20 p-4 hover:from-white/90 hover:to-red-100/90 dark:hover:from-white/15 dark:hover:to-red-900/15 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="p-2 rounded-lg bg-gradient-to-br from-red-500/20 to-pink-500/20">
+                    <Icon icon="mdi:clock" class="text-lg text-red-600 dark:text-red-400" />
+                  </div>
+                  <p class="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">{{ $t('staking.unbonding_time') }}</p>
+                </div>
+                <p class="text-lg font-bold bg-gradient-to-r from-red-600 to-pink-600 dark:from-red-400 dark:to-pink-400 bg-clip-text text-transparent">
+                  <span v-if="v.unbonding_time && !v.unbonding_time.startsWith('1970')">
+                    {{ format.toDay(v.unbonding_time, 'from') }}
+                  </span>
+                  <span v-else>-</span>
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="text-sm px-4 pt-3 border-t">{{ v.description?.details }}</div>
     </div>
 
-    <div class="mt-3 grid grid-cols-1 md:!grid-cols-3 gap-4">
+    <!-- Info Cards Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Commission Rate -->
       <div>
         <CommissionRate :commission="v.commission"></CommissionRate>
       </div>
-      <div class="bg-base-100 rounded shadow relative overflow-auto">
-        <div class="text-lg font-semibold text-main px-4 pt-4">
-          {{ $t('staking.commissions_&_rewards') }}
-        </div>
-        <div class="px-4 mt-1 flex flex-col justify-between pb-4 max-h-72" style="height: calc(100% - 50px)">
-          <div class="overflow-auto flex-1">
-            <div class="text-sm mb-2">{{ $t('staking.commissions') }}</div>
-            <div
-              v-for="(i, k) in commission"
-              :key="`reward-${k}`"
-              color="info"
-              label
-              variant="outlined"
-              class="mr-1 mb-1 badge text-xs"
-            >
-              {{ format.formatToken2(i) }}
+      
+      <!-- Commissions & Rewards -->
+      <div class="backdrop-blur-xl bg-gradient-to-br from-white/95 via-white/90 to-emerald-50/90 dark:from-white/5 dark:via-white/5 dark:to-emerald-900/10 rounded-2xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-full blur-3xl transform translate-x-24 -translate-y-24"></div>
+        
+        <div class="relative p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 backdrop-blur-sm">
+              <Icon icon="mdi:cash-multiple" class="text-lg text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div class="text-sm mb-2 mt-2">{{ $t('staking.outstanding') }} {{ $t('account.rewards') }}</div>
-            <div v-for="(i, k) in rewards" :key="`reward-${k}`" class="mr-1 mb-1 badge text-xs">
-              {{ format.formatToken2(i) }}
-            </div>
+            <h3 class="text-sm font-bold bg-gradient-to-r from-emerald-600 to-green-600 dark:from-emerald-400 dark:to-green-400 bg-clip-text text-transparent">
+              {{ $t('staking.commissions_&_rewards') }}
+            </h3>
           </div>
-          <div class="">
-            <label
-              for="withdraw_commission"
-              class="btn btn-primary w-full"
-              @click="
-                dialog.open('withdraw_commission', {
-                  validator_address: v.operator_address,
-                })
-              "
-              >{{ $t('account.btn_withdraw') }}</label
-            >
-          </div>
-        </div>
-      </div>
-      <div class="bg-base-100 rounded shadow overflow-x-auto">
-        <div class="px-4 pt-4 mb-2 text-main font-lg font-semibold">
-          {{ $t('staking.addresses') }}
-        </div>
-        <div class="px-4 pb-4">
-          <div class="mb-3">
-            <div class="text-sm flex">
-              {{ $t('staking.account_addr') }}
-              <Icon
-                icon="mdi:content-copy"
-                class="ml-2 cursor-pointer"
-                v-show="addresses.account"
-                @click="copyWebsite(addresses.account || '')"
-              />
-            </div>
-            <RouterLink class="text-xs text-primary" :to="`/${chain}/account/${addresses.account}`">
-              {{ addresses.account }}
-            </RouterLink>
-          </div>
-          <div class="mb-3">
-            <div class="text-sm flex">
-              {{ $t('staking.operator_addr') }}
-              <Icon
-                icon="mdi:content-copy"
-                class="ml-2 cursor-pointer"
-                v-show="v.operator_address"
-                @click="copyWebsite(v.operator_address || '')"
-              />
-            </div>
-            <div class="text-xs">
-              {{ v.operator_address }}
-            </div>
-          </div>
-          <div class="mb-3">
-            <div class="text-sm flex">
-              {{ $t('staking.hex_addr') }}
-              <Icon
-                icon="mdi:content-copy"
-                class="ml-2 cursor-pointer"
-                v-show="addresses.hex"
-                @click="copyWebsite(addresses.hex || '')"
-              />
-            </div>
-            <div class="text-xs">{{ addresses.hex }}</div>
-          </div>
-          <div class="mb-3">
-            <div class="text-sm flex">
-              {{ $t('staking.signer_addr') }}
-              <Icon
-                icon="mdi:content-copy"
-                class="ml-2 cursor-pointer"
-                v-show="addresses.valCons"
-                @click="copyWebsite(addresses.valCons || '')"
-              />
-            </div>
-            <div class="text-xs">{{ addresses.valCons }}</div>
-          </div>
-          <div>
-            <div class="text-sm flex">
-              {{ $t('staking.consensus_pub_key') }}
-              <Icon
-                icon="mdi:content-copy"
-                class="ml-2 cursor-pointer"
-                v-show="v.consensus_pubkey"
-                @click="copyWebsite(JSON.stringify(v.consensus_pubkey) || '')"
-              />
-            </div>
-            <div class="text-xs">{{ v.consensus_pubkey }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="delegations.delegation_responses" class="mt-5 bg-base-100 shadow rounded p-4">
-      <div class="text-lg mb-4 font-semibold">
-        {{ $t('account.delegations') }}
-        <span class="float-right">
-          {{ delegations.delegation_responses?.length || 0 }} / {{ delegations.pagination?.total || 0 }}
-        </span>
-      </div>
-      <div class="rounded overflow-auto">
-        <table class="table validatore-table w-full">
-          <thead>
-            <th class="text-left pl-4" style="position: relative; z-index: 2">
-              {{ $t('account.delegator') }}
-            </th>
-            <th class="text-left pl-4">{{ $t('account.delegation') }}</th>
-          </thead>
-          <tbody>
-            <tr v-for="{ balance, delegation } in delegations.delegation_responses">
-              <td class="text-sm text-primary">
-                {{ delegation.delegator_address }}
-              </td>
-              <td class="truncate text-primary">
-                {{ format.formatToken(balance) }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <PaginationBar :total="delegations.pagination?.total" :limit="page.limit" :callback="pageload" />
-      </div>
-    </div>
-
-    <div class="mt-5 bg-base-100 shadow rounded p-4">
-      <div class="text-lg mb-4 font-semibold">
-        {{ $t('account.transactions') }}
-      </div>
-      <div class="rounded overflow-auto">
-        <table class="table validatore-table w-full">
-          <thead>
-            <th class="text-left pl-4" style="position: relative; z-index: 2">
-              {{ $t('account.height') }}
-            </th>
-            <th class="text-left pl-4">{{ $t('account.hash') }}</th>
-            <th class="text-left pl-4" width="40%">
-              {{ $t('account.messages') }}
-            </th>
-            <th class="text-left pl-4">{{ $t('account.time') }}</th>
-          </thead>
-          <tbody>
-            <tr v-for="(item, i) in txs.tx_responses">
-              <td class="text-sm text-primary">
-                <RouterLink :to="`/${props.chain}/block/${item.height}`">{{ item.height }}</RouterLink>
-              </td>
-              <td class="truncate text-primary" style="max-width: 200px">
-                <RouterLink :to="`/${props.chain}/tx/${item.txhash}`">
-                  {{ item.txhash }}
-                </RouterLink>
-              </td>
-              <td>
-                <div class="flex items-center">
-                  <span class="mr-2">{{ format.messages(item.tx.body.messages) }}</span>
-                  <Icon v-if="item.code === 0" icon="mdi-check" class="text-yes" />
-                  <Icon v-else icon="mdi-multiply" class="text-no" />
-                </div>
-              </td>
-              <td width="150">{{ format.toDay(item.timestamp, 'from') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="mt-5 bg-base-100 shadow rounded p-4">
-      <div class="text-lg mb-4 font-semibold">
-        <div class="tabs tabs-boxed bg-transparent">
-          <span class="mr-10">Voting Power Events: </span>
-          <a
-            class="tab text-gray-400"
-            :class="{ 'tab-active': selectedEventType === EventType.Delegate }"
-            @click="loadPowerEvents(1, EventType.Delegate)"
-            >{{ $t('account.btn_delegate') }}</a
-          >
-          <a
-            class="tab text-gray-400"
-            :class="{ 'tab-active': selectedEventType === EventType.Unbond }"
-            @click="loadPowerEvents(1, EventType.Unbond)"
-            >{{ $t('account.btn_unbond') }}</a
-          >
-        </div>
-      </div>
-      <div class="rounded overflow-auto">
-        <table class="table validatore-table w-full">
-          <thead>
-            <th class="text-left pl-4">{{ $t('account.delegator') }}</th>
-            <th class="text-left pl-4">{{ $t('account.amount') }}</th>
-            <th class="text-left pl-4">
-              {{ $t('account.height') }} / {{ $t('account.time') }}
-            </th>
-          </thead>
-          <tbody>
-            <tr v-for="(item, i) in events.tx_responses">
-              <td class="pr-2 truncate text-primary" style="max-width: 250px">
-                <RouterLink
-                  v-for="d in mapDelegators(item.tx?.body?.messages)"
-                  :to="`/${props.chain}/account/${d}`"
+          
+          <div class="space-y-3 max-h-48 overflow-y-auto">
+            <div>
+              <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('staking.commissions') }}</p>
+              <div class="flex flex-wrap gap-1">
+                <span
+                  v-for="(i, k) in commission"
+                  :key="`commission-${k}`"
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
                 >
-                  {{ d }}
-                </RouterLink>
-              </td>
-              <td>
-                <div
-                  class="flex items-center"
-                  :class="{
-                    'text-yes': selectedEventType === EventType.Delegate,
-                    'text-no': selectedEventType === EventType.Unbond,
-                  }"
+                  {{ format.formatToken2(i) }}
+                </span>
+              </div>
+            </div>
+            
+            <div>
+              <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {{ $t('staking.outstanding') }} {{ $t('account.rewards') }}
+              </p>
+              <div class="flex flex-wrap gap-1">
+                <span
+                  v-for="(i, k) in rewards"
+                  :key="`reward-${k}`"
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/30"
                 >
-                  <RouterLink :to="`/${props.chain}/tx/${item.txhash}`">
-                    <span class="mr-2">
-                      {{ selectedEventType === EventType.Delegate ? '+' : '-' }} {{ mapEvents(item.events) }}</span
-                    >
+                  {{ format.formatToken2(i) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <button
+            @click="dialog.open('withdraw_commission', { validator_address: v.operator_address })"
+            class="mt-4 w-full px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+          >
+            <Icon icon="mdi:cash-check" class="inline-block mr-1 text-sm" />
+            {{ $t('account.btn_withdraw') }}
+          </button>
+        </div>
+      </div>
+      
+      <!-- Addresses -->
+      <div class="backdrop-blur-xl bg-gradient-to-br from-white/95 via-white/90 to-indigo-50/90 dark:from-white/5 dark:via-white/5 dark:to-indigo-900/10 rounded-2xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-indigo-400/10 via-purple-400/10 to-blue-400/10 rounded-full blur-3xl transform translate-x-24 -translate-y-24"></div>
+        
+        <div class="relative p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 backdrop-blur-sm">
+              <Icon icon="mdi:map-marker" class="text-lg text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h3 class="text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+              {{ $t('staking.addresses') }}
+            </h3>
+          </div>
+          
+          <div class="space-y-2">
+            <!-- Account Address -->
+            <div class="group">
+              <div class="flex items-center gap-1 mb-0.5">
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {{ $t('staking.account_addr') }}
+                </p>
+                <Icon
+                  icon="mdi:content-copy"
+                  class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors text-xs"
+                  v-show="addresses.account"
+                  @click="copyWebsite(addresses.account || '')"
+                />
+              </div>
+              <RouterLink 
+                class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 break-all transition-colors" 
+                :to="`/${chain}/account/${addresses.account}`"
+              >
+                {{ addresses.account }}
+              </RouterLink>
+            </div>
+            
+            <!-- Operator Address -->
+            <div class="group">
+              <div class="flex items-center gap-1 mb-0.5">
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {{ $t('staking.operator_addr') }}
+                </p>
+                <Icon
+                  icon="mdi:content-copy"
+                  class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors text-xs"
+                  v-show="v.operator_address"
+                  @click="copyWebsite(v.operator_address || '')"
+                />
+              </div>
+              <p class="text-xs text-gray-600 dark:text-gray-400 break-all">
+                {{ v.operator_address }}
+              </p>
+            </div>
+            
+            <!-- Hex Address -->
+            <div class="group">
+              <div class="flex items-center gap-1 mb-0.5">
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {{ $t('staking.hex_addr') }}
+                </p>
+                <Icon
+                  icon="mdi:content-copy"
+                  class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors text-xs"
+                  v-show="addresses.hex"
+                  @click="copyWebsite(addresses.hex || '')"
+                />
+              </div>
+              <p class="text-xs text-gray-600 dark:text-gray-400 break-all">
+                {{ addresses.hex }}
+              </p>
+            </div>
+            
+            <!-- Signer Address -->
+            <div class="group">
+              <div class="flex items-center gap-1 mb-0.5">
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {{ $t('staking.signer_addr') }}
+                </p>
+                <Icon
+                  icon="mdi:content-copy"
+                  class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors text-xs"
+                  v-show="addresses.valCons"
+                  @click="copyWebsite(addresses.valCons || '')"
+                />
+              </div>
+              <p class="text-xs text-gray-600 dark:text-gray-400 break-all">
+                {{ addresses.valCons }}
+              </p>
+            </div>
+            
+            <!-- Consensus Pub Key -->
+            <div class="group">
+              <div class="flex items-center gap-1 mb-0.5">
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {{ $t('staking.consensus_pub_key') }}
+                </p>
+                <Icon
+                  icon="mdi:content-copy"
+                  class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors text-xs"
+                  v-show="v.consensus_pubkey"
+                  @click="copyWebsite(JSON.stringify(v.consensus_pubkey) || '')"
+                />
+              </div>
+              <p class="text-xs text-gray-600 dark:text-gray-400 break-all">
+                {{ JSON.stringify(v.consensus_pubkey) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delegations Section -->
+    <div v-if="delegations.delegation_responses" class="backdrop-blur-xl bg-gradient-to-br from-white/95 via-white/90 to-purple-50/90 dark:from-white/5 dark:via-white/5 dark:to-purple-900/10 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-purple-400/10 via-indigo-400/10 to-blue-400/10 rounded-full blur-3xl transform translate-x-40 -translate-y-40"></div>
+      
+      <div class="relative p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <div class="p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 backdrop-blur-sm">
+              <Icon icon="mdi:account-group" class="text-2xl text-purple-600 dark:text-purple-400" />
+            </div>
+            <h2 class="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
+              {{ $t('account.delegations') }}
+            </h2>
+          </div>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+            {{ delegations.delegation_responses?.length || 0 }} / {{ delegations.pagination?.total || 0 }}
+          </span>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-gray-200/50 dark:border-white/10">
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {{ $t('account.delegator') }}
+                </th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {{ $t('account.delegation') }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr 
+                v-for="{ balance, delegation } in delegations.delegation_responses" 
+                :key="delegation.delegator_address"
+                class="border-b border-gray-200/30 dark:border-white/5 hover:bg-gradient-to-r hover:from-transparent hover:via-purple-500/5 hover:to-transparent transition-all duration-200"
+              >
+                <td class="px-4 py-3">
+                  <p class="text-sm font-medium text-purple-600 dark:text-purple-400 truncate max-w-xs">
+                    {{ delegation.delegator_address }}
+                  </p>
+                </td>
+                <td class="px-4 py-3">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                    {{ format.formatToken(balance) }}
+                  </p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="mt-4">
+          <PaginationBar :total="delegations.pagination?.total" :limit="page.limit" :callback="pageload" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions Section -->
+    <div class="backdrop-blur-xl bg-gradient-to-br from-white/95 via-white/90 to-blue-50/90 dark:from-white/5 dark:via-white/5 dark:to-blue-900/10 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-blue-400/10 via-cyan-400/10 to-teal-400/10 rounded-full blur-3xl transform translate-x-40 -translate-y-40"></div>
+      
+      <div class="relative p-6">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm">
+            <Icon icon="mdi:swap-horizontal" class="text-2xl text-blue-600 dark:text-blue-400" />
+          </div>
+          <h2 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
+            {{ $t('account.transactions') }}
+          </h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-gray-200/50 dark:border-white/10">
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {{ $t('account.height') }}
+                </th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {{ $t('account.hash') }}
+                </th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {{ $t('account.messages') }}
+                </th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {{ $t('account.time') }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr 
+                v-for="(item, i) in txs.tx_responses" 
+                :key="i"
+                class="border-b border-gray-200/30 dark:border-white/5 hover:bg-gradient-to-r hover:from-transparent hover:via-blue-500/5 hover:to-transparent transition-all duration-200"
+              >
+                <td class="px-4 py-3">
+                  <RouterLink 
+                    :to="`/${props.chain}/block/${item.height}`"
+                    class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                  >
+                    {{ item.height }}
                   </RouterLink>
-                  <Icon v-if="item.code === 0" icon="mdi-check" class="text-yes" />
-                  <Icon v-else icon="mdi-multiply" class="text-no" />
-                </div>
-              </td>
-              <td width="150">
-                <RouterLink class="text-primary mb-0" :to="`/${props.chain}/block/${item.height}`">{{
-                  item.height
-                }}</RouterLink
-                ><br />
-                <span class="text-xs pt-0 mt-0">{{ format.toDay(item.timestamp, 'from') }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <PaginationBar :total="events.pagination?.total" :limit="page.limit" :callback="pagePowerEvents" />
+                </td>
+                <td class="px-4 py-3">
+                  <RouterLink 
+                    :to="`/${props.chain}/tx/${item.txhash}`"
+                    class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors truncate block max-w-[200px]"
+                  >
+                    {{ item.txhash }}
+                  </RouterLink>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                      {{ format.messages(item.tx.body.messages) }}
+                    </span>
+                    <Icon 
+                      v-if="item.code === 0" 
+                      icon="mdi:check-circle" 
+                      class="text-emerald-500"
+                    />
+                    <Icon 
+                      v-else 
+                      icon="mdi:close-circle" 
+                      class="text-red-500"
+                    />
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <p class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ format.toDay(item.timestamp, 'from') }}
+                  </p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voting Power Events -->
+    <div class="backdrop-blur-xl bg-gradient-to-br from-white/95 via-white/90 to-amber-50/90 dark:from-white/5 dark:via-white/5 dark:to-amber-900/10 rounded-2xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-400/10 via-orange-400/10 to-yellow-400/10 rounded-full blur-3xl transform translate-x-32 -translate-y-32"></div>
+      
+      <div class="relative p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 backdrop-blur-sm">
+              <Icon icon="mdi:swap-vertical" class="text-lg text-amber-600 dark:text-amber-400" />
+            </div>
+            <h3 class="text-sm font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+              Voting Power Events
+            </h3>
+          </div>
+          
+          <div class="flex gap-2">
+            <button
+              class="px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200"
+              :class="selectedEventType === EventType.Delegate 
+                ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30' 
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'"
+              @click="loadPowerEvents(1, EventType.Delegate)"
+            >
+              {{ $t('account.btn_delegate') }}
+            </button>
+            <button
+              class="px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200"
+              :class="selectedEventType === EventType.Unbond 
+                ? 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-700 dark:text-red-300 border border-red-500/30' 
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'"
+              @click="loadPowerEvents(1, EventType.Unbond)"
+            >
+              {{ $t('account.btn_unbond') }}
+            </button>
+          </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-gray-200/50 dark:border-white/10">
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $t('account.delegator') }}</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $t('account.amount') }}</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $t('account.height') }} / {{ $t('account.time') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr 
+                v-for="(item, i) in events.tx_responses" 
+                :key="i"
+                class="border-b border-gray-200/30 dark:border-white/5 hover:bg-gradient-to-r hover:from-transparent hover:via-amber-500/5 hover:to-transparent transition-all duration-200"
+              >
+                <td class="px-3 py-2">
+                  <RouterLink
+                    v-for="d in mapDelegators(item.tx?.body?.messages)"
+                    :key="d"
+                    :to="`/${props.chain}/account/${d}`"
+                    class="text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 truncate block max-w-[200px]"
+                  >
+                    {{ d }}
+                  </RouterLink>
+                </td>
+                <td class="px-3 py-2">
+                  <RouterLink 
+                    :to="`/${props.chain}/tx/${item.txhash}`"
+                    class="flex items-center gap-1 text-xs"
+                    :class="{
+                      'text-emerald-600 dark:text-emerald-400': selectedEventType === EventType.Delegate,
+                      'text-red-600 dark:text-red-400': selectedEventType === EventType.Unbond,
+                    }"
+                  >
+                    <span>{{ selectedEventType === EventType.Delegate ? '+' : '-' }} {{ mapEvents(item.events) }}</span>
+                    <Icon v-if="item.code === 0" icon="mdi:check-circle" class="text-emerald-500" />
+                    <Icon v-else icon="mdi:close-circle" class="text-red-500" />
+                  </RouterLink>
+                </td>
+                <td class="px-3 py-2">
+                  <RouterLink 
+                    :to="`/${props.chain}/block/${item.height}`"
+                    class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  >
+                    {{ item.height }}
+                  </RouterLink>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">{{ format.toDay(item.timestamp, 'from') }}</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="mt-3">
+          <PaginationBar :total="events.pagination?.total" :limit="page.limit" :callback="pagePowerEvents" />
+        </div>
       </div>
     </div>
     <!-- end -->

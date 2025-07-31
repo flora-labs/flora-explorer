@@ -22,6 +22,14 @@ function isAddress() {
   return isBech32Address(props.value) && String(props.value).indexOf('valoper1') === -1;
 }
 
+function isHash() {
+  const v = String(props.value);
+  // Check if it's a hex hash (common patterns: 64 chars for SHA256, starts with 0x, etc.)
+  return (v.length === 64 && /^[A-Fa-f0-9]+$/.test(v)) || 
+         (v.startsWith('0x') && /^0x[A-Fa-f0-9]+$/.test(v)) ||
+         (v.length > 40 && /^[A-Fa-f0-9]+$/.test(v));
+}
+
 const text = computed(() => {
   if (!props.value) return '';
   const v = String(props.value);
@@ -70,7 +78,7 @@ const isConvertable = computed(() => {
     </div>
   </span>
   <span v-else class="flex"
-    ><span class="break-words max-w-5xl">{{ text }}</span>
+    ><span class="truncate max-w-full" :class="isHash() ? 'font-mono' : ''" :title="text">{{ text }}</span>
     <span v-if="isConvertable" @click="toHexOutput = !toHexOutput" class="ml-2 cursor-pointer">
       <svg
         xmlns="http://www.w3.org/2000/svg"

@@ -16,6 +16,7 @@ import {
 import { useBlockModule } from '@/modules/[chain]/block/block';
 import { DEFAULT } from '@/libs';
 import { hexToRgb, rgbToHsl } from '@/libs/utils';
+import { getModuleIcon } from '@/configs/navigation-icons';
 
 export const useBlockchain = defineStore('blockchain', {
   state: () => {
@@ -75,43 +76,25 @@ export const useBlockchain = defineStore('blockchain', {
             children: routes
               .filter((x) => x.meta.i18n) // defined menu name
               .filter((x) => !this.current?.features || this.current.features.includes(String(x.meta.i18n))) // filter none-custom module
-              .map((x) => ({
-                title: `module.${x.meta.i18n}`,
-                to: { path: x.path.replace(':chain', this.chainName) },
-                icon: { icon: 'mdi-chevron-right', size: '22' },
-                i18n: true,
-                order: x.meta.i18n === 'dashboard' ? 0 : Number(x.meta.order || 100),
-              }))
+              .map((x) => {
+                const moduleKey = String(x.meta.i18n);
+                const iconConfig = getModuleIcon(moduleKey);
+                return {
+                  title: `module.${x.meta.i18n}`,
+                  to: { path: x.path.replace(':chain', this.chainName) },
+                  icon: { icon: iconConfig.icon, size: '20' },
+                  iconColor: iconConfig.color,
+                  i18n: true,
+                  order: x.meta.i18n === 'dashboard' ? 0 : Number(x.meta.order || 100),
+                };
+              })
               .sort((a, b) => a.order - b.order),
           },
         ];
       }
-      // compute favorite menu
-      const favNavItems: VerticalNavItems = [];
-      Object.keys(this.dashboard.favoriteMap).forEach((name) => {
-        const ch = this.dashboard.chains[name];
-        if (ch && this.dashboard.favoriteMap?.[name]) {
-          favNavItems.push({
-            title: ch.prettyName || ch.chainName || name,
-            to: { path: `/${ch.chainName || name}` },
-            icon: { image: ch.logo, size: '22' },
-          });
-        }
-      });
-
-      // combine all together
-      return [
-        ...currNavItem,
-        { heading: 'Ecosystem' } as NavSectionTitle,
-        {
-          title: 'Favorite',
-          children: favNavItems,
-          badgeContent: favNavItems.length,
-          badgeClass: 'bg-primary',
-          i18n: true,
-          icon: { icon: 'mdi-star', size: '22' },
-        } as NavGroup,
-      ];
+      
+      // Return only current chain menu items
+      return currNavItem;
     },
   },
   actions: {

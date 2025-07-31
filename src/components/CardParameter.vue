@@ -34,14 +34,25 @@ function formatTitle(v: string) {
 </script>
 <template>
   <div
-    class="bg-base-100 px-4 pt-3 pb-4 rounded mt-5"
+    class="backdrop-blur-xl bg-white/90 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none relative overflow-hidden p-6"
     v-if="props.cardItem?.items && props.cardItem?.items?.length > 0"
   >
-    <div class="text-base mb-3 text-main">{{ props.cardItem?.title }}</div>
-    <div class="grid grid-cols-2 md:!grid-cols-4 lg:!grid-cols-5 2xl:!grid-cols-6 gap-4">
-      <div v-for="(item, index) of props.cardItem?.items" :key="index" class="rounded-sm bg-active px-4 py-2">
-        <div class="text-xs mb-2 text-secondary capitalize">{{ formatTitle(item?.subtitle) }}</div>
-        <div class="text-base text-main">{{ calculateValue(item?.value) }}</div>
+    <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-full blur-2xl transform translate-x-24 -translate-y-24"></div>
+    <div class="relative">
+      <h3 class="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-6">
+        {{ props.cardItem?.title }}
+      </h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+        <div v-for="(item, index) of props.cardItem?.items" :key="index" 
+          class="group bg-gradient-to-br from-purple-500/5 to-pink-500/5 hover:from-purple-500/10 hover:to-pink-500/10 rounded-2xl p-4 border border-purple-500/10 hover:border-purple-500/20 transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/10 hover:-translate-y-0.5"
+        >
+          <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wider capitalize">
+            {{ formatTitle(item?.subtitle) }}
+          </div>
+          <div class="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-200">
+            {{ calculateValue(item?.value) }}
+          </div>
+        </div>
       </div>
     </div>
   </div>

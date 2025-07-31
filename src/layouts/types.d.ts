@@ -37,6 +37,7 @@ export interface Icon {
 export interface NavLink extends NavLinkProps {
   title: string;
   icon?: Icon;
+  iconColor?: string;
   badgeContent?: string | number;
   badgeClass?: string;
   disable?: boolean;
