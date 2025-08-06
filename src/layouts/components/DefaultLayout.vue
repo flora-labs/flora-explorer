@@ -87,87 +87,42 @@ const show_ad = computed(() => {
   return location.hostname.indexOf('ping.pub') > -1;
 });
 
-// Force navigation background on mount
-onMounted(() => {
-  nextTick(() => {
-    // Force navigation background color after all CSS and themes have loaded
-    const forceNavBackground = () => {
-      const navElements = document.querySelectorAll('.fixed.z-50.left-0.top-0.bottom-0.overflow-auto, .glass-nav');
-      navElements.forEach(el => {
-        if (el instanceof HTMLElement) {
-          el.style.setProperty('background', '#171d30', 'important');
-          el.style.setProperty('background-color', '#171d30', 'important');
-          el.style.setProperty('background-image', 'none', 'important');
-          el.style.setProperty('backdrop-filter', 'none', 'important');
-          el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
-          el.style.setProperty('opacity', '1', 'important');
-        }
-      });
-    };
-
-    // Apply immediately
-    forceNavBackground();
-
-    // Also apply after a short delay to override any dynamic theme changes
-    setTimeout(forceNavBackground, 100);
-    setTimeout(forceNavBackground, 500);
-    setTimeout(forceNavBackground, 1000);
-
-    // Watch for theme changes and reapply
-    const observer = new MutationObserver(() => {
-      forceNavBackground();
-    });
-
-    // Observe changes to html data-theme attribute
-    const htmlElement = document.documentElement;
-    observer.observe(htmlElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
-  });
-});
+// Removed forced dark background to allow proper theme switching
 </script>
 
 <template>
-  <div class="bg-gray-100 dark:bg-[#171d30]">
+  <div class="bg-gray-100 dark:bg-[#0f1218]">
     <!-- sidebar -->
     <div
-      class="fixed z-50 left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible glass-nav glass-nav-solid-override transition-all duration-300"
+      class="fixed z-50 left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible transition-all duration-300 bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-[#171d30] dark:to-[#0f1218] backdrop-blur-sm border-r border-gray-200/50 dark:border-gray-700/50"
       :class="[
         sidebarCollapsed ? 'w-20' : 'w-64',
         { block: sidebarShow, 'hidden xl:!block': !sidebarShow }
       ]"
-      :style="{
-        background: '#171d30 !important',
-        backgroundColor: '#171d30 !important',
-        backgroundImage: 'none !important',
-        backdropFilter: 'none !important',
-        WebkitBackdropFilter: 'none !important',
-        opacity: '1 !important'
-      }"
     >
-      <div class="glass-nav-brand flex justify-between items-center relative overflow-visible">
-        <RouterLink :to="`/${blockchain.chainName || 'flora-devnet'}`" class="flex items-center overflow-hidden hover:opacity-80 transition-opacity"
-          :class="sidebarCollapsed ? 'justify-center w-full' : ''"
+      <div class="nav-brand flex items-center relative overflow-visible px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50">
+        <RouterLink :to="`/${blockchain.chainName || 'flora-devnet'}`" class="flex items-center flex-1 overflow-hidden hover:opacity-80 transition-opacity"
+          :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <img class="w-10 h-10 glass-nav-logo flex-shrink-0" src="../../assets/logo.svg" />
+          <img class="w-10 h-10 nav-logo flex-shrink-0" src="../../assets/logo.svg" />
           <h1 
-            class="ml-3 text-2xl font-semibold glass-nav-title transition-all duration-300 whitespace-nowrap capitalize"
-            :class="sidebarCollapsed ? 'opacity-0 w-0' : 'flex-1 opacity-100'"
+            class="ml-3 text-xl lg:text-2xl font-semibold text-gray-800 dark:text-gray-100 transition-all duration-300 truncate"
+            :class="sidebarCollapsed ? 'opacity-0 w-0' : 'block'"
           >
             {{ blockchain.current?.prettyName || 'Flora Devnet' }}
           </h1>
         </RouterLink>
         
-        <div
-          class="pr-4 cursor-pointer xl:!hidden"
+        <button
+          class="ml-2 p-1.5 rounded-lg hover:bg-gray-200/50 dark:hover:bg-white/10 cursor-pointer xl:!hidden transition-all duration-200"
           @click="sidebarShow = false"
+          aria-label="Close sidebar"
         >
-          <Icon icon="mdi-close" class="text-2xl" />
-        </div>
+          <Icon icon="mdi:close" class="text-xl text-gray-600 dark:text-gray-400" />
+        </button>
       </div>
       <!-- Separator line in collapsed mode -->
-      <div v-if="sidebarCollapsed" class="w-12 h-px bg-gray-700 mx-auto mb-4"></div>
+      <div v-if="sidebarCollapsed" class="w-12 h-px bg-gray-300 dark:bg-gray-700 mx-auto mb-4"></div>
       <div v-for="(item, index) of blockchain.computedChainMenu" :key="index" class="px-2">
         <!-- For first group (index 0), render children directly without collapse wrapper -->
         <template v-if="index === 0 && isNavGroup(item)">
@@ -176,17 +131,17 @@ onMounted(() => {
               <RouterLink
                 v-if="isNavLink(el)"
                 @click="sidebarShow = false"
-                class="glass-nav-item cursor-pointer flex items-center group relative transition-all duration-200"
+                class="cursor-pointer flex items-center group relative transition-all duration-200 hover:bg-gray-100/70 dark:hover:bg-white/10 rounded-lg px-2 py-2"
                 :class="{
-                  'bg-purple-500/10 border-l-2 border-purple-500': selected($route, el),
+                  'bg-purple-500/15 dark:bg-purple-500/20 border-l-2 border-purple-500': selected($route, el),
                   'justify-center': sidebarCollapsed
                 }"
                 :to="el.to"
               >
-                <div class="glass-icon-wrapper transition-all duration-300"
+                <div class="icon-wrapper transition-all duration-300"
                   :class="[
                     sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3',
-                    selected($route, el) ? 'text-purple-400' : (el.iconColor || 'text-gray-400')
+                    selected($route, el) ? 'text-purple-500 dark:text-purple-400' : (el.iconColor || 'text-gray-600 dark:text-gray-400')
                   ]"
                 >
                   <Icon
@@ -207,9 +162,9 @@ onMounted(() => {
                 </div>
                 <div
                   v-if="!sidebarCollapsed"
-                  class="text-sm capitalize text-gray-400 font-medium tracking-wide transition-all duration-300"
+                  class="text-sm capitalize text-gray-700 dark:text-gray-300 font-medium tracking-wide transition-all duration-300"
                   :class="{
-                    '!text-purple-300 font-semibold': selected($route, el),
+                    '!text-purple-600 dark:!text-purple-300 font-semibold': selected($route, el),
                   }"
                 >
                   {{ $t(el?.title) }}
@@ -221,7 +176,7 @@ onMounted(() => {
               class="menu w-full !p-0"
             >
               <RouterLink
-                class="glass-nav-item cursor-pointer flex items-center group relative"
+                class="nav-item cursor-pointer flex items-center group relative hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2 transition-all duration-200"
                 :class="{
                   'justify-center': sidebarCollapsed
                 }"
@@ -245,32 +200,32 @@ onMounted(() => {
         <div
           v-else-if="isNavGroup(item) && index > 0"
           :tabindex="index"
-          class="collapse glass-nav-group mb-2 transition-all duration-300"
+          class="collapse nav-group mb-2 transition-all duration-300"
           :class="{
             'collapse-arrow': item?.children?.length > 0,
           }"
         >
           <input type="checkbox" class="cursor-pointer !h-10 block" @click="changeOpen(index)" />
           <div
-            class="collapse-title !py-3 px-4 flex items-center cursor-pointer glass-nav-item-hover transition-all duration-300"
+            class="collapse-title !py-3 px-4 flex items-center cursor-pointer hover:bg-gray-100/50 dark:hover:bg-white/10 transition-all duration-300"
             :class="sidebarCollapsed ? 'justify-center' : ''"
           >
-            <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+            <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
               <Icon
                 v-if="item?.icon?.icon"
                 :icon="item?.icon?.icon"
                 class="text-xl transition-all duration-300"
                 :class="{
-                  'text-yellow-400': item?.title === 'Favorite',
-                  'text-gray-400': item?.title !== 'Favorite',
+                  'text-yellow-500 dark:text-yellow-400': item?.title === 'Favorite',
+                  'text-gray-600 dark:text-gray-400': item?.title !== 'Favorite',
                 }"
               />
             </div>
-            <div v-if="item?.icon?.image" class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-3'">
+            <div v-if="item?.icon?.image" class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-3'">
               <img :src="item?.icon?.image" class="w-6 h-6 rounded-full" />
             </div>
             <div 
-              class="text-base capitalize flex-1 font-medium text-gray-300 whitespace-nowrap tracking-wide transition-all duration-300"
+              class="text-base capitalize flex-1 font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap tracking-wide transition-all duration-300"
               :class="sidebarCollapsed ? 'hidden' : 'block'"
             >
               {{ item?.title }}
@@ -288,17 +243,17 @@ onMounted(() => {
               <RouterLink
                 v-if="isNavLink(el)"
                 @click="sidebarShow = false"
-                class="glass-nav-item cursor-pointer flex items-center group relative transition-all duration-200"
+                class="cursor-pointer flex items-center group relative transition-all duration-200 hover:bg-gray-100/70 dark:hover:bg-white/10 rounded-lg px-2 py-2"
                 :class="{
-                  'bg-purple-500/10 border-l-2 border-purple-500': selected($route, el),
+                  'bg-purple-500/15 dark:bg-purple-500/20 border-l-2 border-purple-500': selected($route, el),
                   'justify-center': sidebarCollapsed
                 }"
                 :to="el.to"
               >
-                <div class="glass-icon-wrapper transition-all duration-300"
+                <div class="icon-wrapper transition-all duration-300"
                   :class="[
                     sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3',
-                    selected($route, el) ? 'text-purple-400' : (el.iconColor || 'text-gray-400')
+                    selected($route, el) ? 'text-purple-500 dark:text-purple-400' : (el.iconColor || 'text-gray-600 dark:text-gray-400')
                   ]"
                 >
                   <Icon
@@ -319,9 +274,9 @@ onMounted(() => {
                 </div>
                 <div
                   v-if="!sidebarCollapsed"
-                  class="text-sm capitalize text-gray-400 font-medium tracking-wide transition-all duration-300"
+                  class="text-sm capitalize text-gray-700 dark:text-gray-300 font-medium tracking-wide transition-all duration-300"
                   :class="{
-                    '!text-purple-300 font-semibold': selected($route, el),
+                    '!text-purple-600 dark:!text-purple-300 font-semibold': selected($route, el),
                   }"
                 >
                   {{ item?.title === 'Favorite' ? el?.title : $t(el?.title) }}
@@ -340,7 +295,7 @@ onMounted(() => {
               class="menu w-full !p-0"
             >
               <RouterLink
-                class="glass-nav-item cursor-pointer flex items-center group relative"
+                class="nav-item cursor-pointer flex items-center group relative hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2 transition-all duration-200"
                 :class="{
                   'justify-center': sidebarCollapsed
                 }"
@@ -373,14 +328,14 @@ onMounted(() => {
             <RouterLink
               v-if="isNavLink(el)"
               @click="sidebarShow = false"
-              class="glass-nav-item cursor-pointer flex items-center group relative justify-center mb-2 transition-all duration-200"
+              class="nav-item cursor-pointer flex items-center group relative justify-center mb-2 transition-all duration-200 hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2"
               :class="{
                 'bg-purple-500/10 border-2 border-purple-500/50 rounded-xl': selected($route, el)
               }"
               :to="el.to"
             >
-            <div class="glass-icon-wrapper transition-all duration-300"
-              :class="selected($route, el) ? 'text-purple-400' : (el.iconColor || 'text-gray-400')"
+            <div class="icon-wrapper transition-all duration-300"
+              :class="selected($route, el) ? 'text-purple-500 dark:text-purple-400' : (el.iconColor || 'text-gray-600 dark:text-gray-400')"
             >
               <Icon
                 v-if="el?.icon?.icon"
@@ -410,7 +365,7 @@ onMounted(() => {
           <!-- Faucet item when collapsed -->
           <RouterLink
             v-if="dashboard.networkType === NetworkType.Testnet"
-            class="glass-nav-item cursor-pointer flex items-center group relative justify-center mb-2"
+            class="nav-item cursor-pointer flex items-center group relative justify-center mb-2 hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2"
             :to="`/${blockchain.chainName}/faucet`"
           >
             <div class="glass-icon-wrapper transition-all duration-300 text-blue-300">
@@ -429,10 +384,10 @@ onMounted(() => {
           v-if="isNavLink(item)"
           :to="item?.to"
           @click="sidebarShow = false"
-          class="glass-nav-item cursor-pointer flex items-center mb-2 group relative"
+          class="nav-item cursor-pointer flex items-center mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2 transition-all duration-200"
           :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
             <Icon
               v-if="item?.icon?.icon"
               :icon="item?.icon?.icon"
@@ -443,14 +398,14 @@ onMounted(() => {
               }"
             />
           </div>
-          <div v-if="item?.icon?.image" class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-3'">
+          <div v-if="item?.icon?.image" class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-3'">
             <img
               :src="item?.icon?.image"
               class="w-6 h-6 rounded-full"
             />
           </div>
           <div 
-            class="text-base capitalize flex-1 font-medium text-gray-300 whitespace-nowrap tracking-wide transition-all duration-300"
+            class="text-base capitalize flex-1 font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap tracking-wide transition-all duration-300"
             :class="sidebarCollapsed ? 'hidden' : 'block'"
           >
             {{ item?.title }}
@@ -472,20 +427,20 @@ onMounted(() => {
         </RouterLink>
         <div
           v-if="isNavTitle(item)"
-          class="glass-nav-section"
+          class="nav-section text-gray-500 dark:text-gray-500 font-semibold text-xs uppercase tracking-wider px-2 mb-2"
         >
           {{ item?.heading }}
         </div>
       </div>
       <div class="px-2 mt-4">
-        <div class="glass-nav-section" v-if="!sidebarCollapsed">Tools</div>
+        <div class="nav-section text-gray-500 dark:text-gray-500 font-semibold text-xs uppercase tracking-wider px-2 mb-2" v-if="!sidebarCollapsed">Tools</div>
         <RouterLink
           to="/wallet/suggest"
-          class="glass-nav-item flex items-center cursor-pointer mb-2 group relative"
+          class="nav-item flex items-center cursor-pointer mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-lg px-2 py-2 transition-all duration-200"
           :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon icon="mdi:wallet-plus" class="text-xl text-purple-400" />
+          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+            <Icon icon="mdi:wallet-plus" class="text-xl text-purple-600 dark:text-purple-400" />
           </div>
           <div 
             class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
@@ -503,20 +458,20 @@ onMounted(() => {
         </RouterLink>
         <div
           v-if="showDiscord"
-          class="glass-nav-section"
+          class="nav-section text-gray-500 dark:text-gray-500 font-semibold text-xs uppercase tracking-wider px-2 mb-2"
         >
           {{ $t('module.sponsors') }}
         </div>
         <Sponsors v-if="showDiscord && !sidebarCollapsed" />
-        <div class="glass-nav-section" v-if="!sidebarCollapsed">{{ $t('module.links') }}</div>
+        <div class="nav-section text-gray-500 dark:text-gray-500 font-semibold text-xs uppercase tracking-wider px-2 mb-2" v-if="!sidebarCollapsed">{{ $t('module.links') }}</div>
         <a
           href="https://twitter.com/flora_network"
           target="_blank"
-          class="glass-nav-item flex items-center cursor-pointer mb-2 group relative"
+          class="nav-item flex items-center cursor-pointer mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-lg px-2 py-2 transition-all duration-200"
           :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon icon="simple-icons:x" class="text-xl text-sky-400" />
+          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+            <Icon icon="simple-icons:x" class="text-xl text-sky-600 dark:text-sky-400" />
           </div>
           <div 
             class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
@@ -536,11 +491,11 @@ onMounted(() => {
           v-if="showDiscord"
           href="https://discord.com/invite/CmjYVSr6GW"
           target="_blank"
-          class="glass-nav-item flex items-center cursor-pointer mb-2 group relative"
+          class="nav-item flex items-center cursor-pointer mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-lg px-2 py-2 transition-all duration-200"
           :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon icon="mdi:discord" class="text-xl text-gray-400" />
+          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+            <Icon icon="mdi:discord" class="text-xl text-gray-600 dark:text-gray-400" />
           </div>
           <div 
             class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
@@ -559,11 +514,11 @@ onMounted(() => {
         <a
           href="https://flora.network"
           target="_blank"
-          class="glass-nav-item flex items-center cursor-pointer mb-2 group relative"
+          class="nav-item flex items-center cursor-pointer mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-lg px-2 py-2 transition-all duration-200"
           :class="sidebarCollapsed ? 'justify-center' : ''"
         >
-          <div class="glass-icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon icon="mdi:frequently-asked-questions" class="text-xl text-amber-400" />
+          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
+            <Icon icon="mdi:frequently-asked-questions" class="text-xl text-amber-600 dark:text-amber-400" />
           </div>
           <div 
             class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
@@ -585,7 +540,7 @@ onMounted(() => {
     <!-- Collapse Toggle Button -->
     <button
       @click="toggleSidebar"
-      class="fixed w-10 h-10 rounded-full bg-[#171d30] hover:bg-[#1e2437] border border-purple-500/30 hover:border-purple-500/50 items-center justify-center transition-all duration-300 hidden xl:flex hover:scale-105 group"
+      class="fixed w-10 h-10 rounded-full bg-white/90 dark:bg-[#171d30]/90 hover:bg-white/95 dark:hover:bg-[#1e2437]/90 backdrop-blur-sm border border-purple-500/30 dark:border-purple-500/40 hover:border-purple-500/50 dark:hover:border-purple-500/60 items-center justify-center transition-all duration-300 hidden xl:flex hover:scale-105 group shadow-lg dark:shadow-purple-500/20"
       :style="{ 
         top: '30px',
         left: sidebarCollapsed ? '80px' : '256px',
@@ -608,14 +563,14 @@ onMounted(() => {
       <!-- header -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4" style="overflow: visible !important; position: relative; z-index: 100;">
         <div
-          class="flex items-center py-3 backdrop-blur-xl bg-white/95 dark:bg-white/5 rounded-3xl border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none px-6 relative z-[100]"
+          class="flex items-center py-3 backdrop-blur-sm bg-gradient-to-r from-white/90 via-white/85 to-white/80 dark:from-gray-900/80 dark:via-gray-800/75 dark:to-gray-900/70 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg dark:shadow-[0_4px_20px_0_rgba(0,0,0,0.5)] px-6 relative z-[100]"
           style="overflow: visible !important"
         >
           <div
-            class="text-2xl pr-3 cursor-pointer xl:!hidden"
+            class="text-2xl pr-3 cursor-pointer xl:!hidden group"
             @click="sidebarShow = true"
           >
-            <Icon icon="mdi-menu" />
+            <Icon icon="mdi-menu" class="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors" />
           </div>
 
           <ChainProfile />
@@ -672,46 +627,18 @@ onMounted(() => {
 </template>
 
 <style>
-/* CRITICAL: Force solid navigation background for production */
-.fixed.z-50.left-0.top-0.bottom-0.overflow-auto {
-  background: #171d30 !important;
-  background-color: #171d30 !important;
-  background-image: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  opacity: 1 !important;
-}
-
-/* Override glassmorphic theme for navigation */
-html[data-theme='glassmorphic'] .fixed.z-50.left-0.top-0.bottom-0.overflow-auto,
-[data-theme='glassmorphic'] .fixed.z-50.left-0.top-0.bottom-0.overflow-auto {
-  background: #171d30 !important;
-  background-color: #171d30 !important;
-  background-image: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
 /* Ensure width transitions work properly */
 .w-20, .w-64 {
   transition: width 0.3s ease !important;
 }
 
 /* Allow overflow for collapse button */
-.glass-nav-brand {
+.nav-brand {
   overflow: visible !important;
 }
 
-/* Additional override for glass-nav class */
-.glass-nav {
-  background: #171d30 !important;
-  background-color: #171d30 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
 /* Collapsed nav adjustments */
-.w-20 .glass-nav-section {
+.w-20 .nav-section {
   display: none;
 }
 
@@ -720,20 +647,31 @@ html[data-theme='glassmorphic'] .fixed.z-50.left-0.top-0.bottom-0.overflow-auto,
 }
 
 /* Smooth transitions for all nav elements */
-.glass-nav * {
+.nav * {
   transition: all 0.3s ease;
 }
 
 /* Active nav item styling */
-.glass-nav-item {
+.nav-item {
   transition: all 0.2s ease;
 }
 
-.glass-nav-item.bg-purple-500\/10 {
+/* Light theme active states - more subtle */
+html:not(.dark) .nav-item-active {
+  background: rgba(147, 51, 234, 0.1) !important;
+  border-color: rgba(147, 51, 234, 0.4) !important;
+}
+
+html:not(.dark) .nav-item:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Dark theme active states */
+html.dark .nav-item-active {
   background: rgba(147, 51, 234, 0.1) !important;
 }
 
-.glass-nav-item.bg-purple-500\/10:hover {
+html.dark .nav-item-active:hover {
   background: rgba(147, 51, 234, 0.15) !important;
 }
 </style>

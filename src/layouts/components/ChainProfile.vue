@@ -25,7 +25,7 @@ function toggleModal() {
 <template>
   <div>
     <!-- Clickable area -->
-    <div @click="toggleModal" class="flex items-center cursor-pointer group px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-all duration-200">
+    <div @click="toggleModal" class="flex items-center cursor-pointer group px-3 py-2 rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/10 transition-all duration-200">
       <div class="p-1 relative mr-3">
         <img v-lazy="chainStore.logo" class="w-9 h-9 rounded-full ring-2 ring-white/20 group-hover:ring-purple-500/30 transition-all duration-200" />
         <div
@@ -36,20 +36,20 @@ function toggleModal() {
           }"
         ></div>
       </div>
-      <div class="flex-1 w-0">
+      <div class="flex-1 min-w-0">
         <div
           :key="baseStore.latest?.block?.header?.height || chainStore.chainName || ''"
-          class="capitalize whitespace-nowrap text-base font-semibold text-gray-700 dark:text-gray-200 hidden md:!block transition-colors duration-200 group-hover:text-purple-600 dark:group-hover:text-purple-400"
+          class="capitalize text-sm lg:text-base font-semibold text-gray-700 dark:text-gray-200 hidden md:!block transition-colors duration-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 truncate"
         >
           {{
             baseStore.latest?.block?.header?.height
               ? `#${baseStore.latest.block.header.height.toLocaleString()}`
-              : chainStore.chainName || ''
+              : (chainStore.current?.prettyName || chainStore.chainName || '')
           }}
-          <span class="text-red-500 dark:text-red-400 ml-1">{{ baseStore.connected ? '' : '(disconnected)' }}</span>
+          <span class="text-red-500 dark:text-red-400 ml-1">{{ baseStore.connected ? '' : '(offline)' }}</span>
         </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap hidden md:!block">
-          {{ chainStore.connErr || chainStore.endpoint.address.replace('testnet-api', 'devnet-api') }}
+        <div class="text-xs text-gray-500 dark:text-gray-400 hidden md:!block truncate">
+          {{ chainStore.connErr || chainStore.endpoint.address.replace('testnet-api', 'devnet-api').replace('https://', '') }}
         </div>
       </div>
       <Icon icon="mdi:chevron-down" class="text-gray-400 group-hover:text-purple-500 transition-all duration-200 ml-2" />
