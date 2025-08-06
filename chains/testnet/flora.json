@@ -17,7 +17,7 @@
   "logo": "/logo.svg",
   "assets": [{
     "base": "uflora",
-    "symbol": "FLORA",
+    "symbol": "dFLORA",
     "exponent": 18,
     "coingecko_id": "",
     "logo": "/logo.svg",
@@ -27,7 +27,7 @@
         "exponent": 0
       },
       {
-        "denom": "flora",
+        "denom": "dflora",
         "exponent": 18
       }
     ]

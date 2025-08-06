@@ -585,7 +585,7 @@ onMounted(() => {
     <!-- Collapse Toggle Button -->
     <button
       @click="toggleSidebar"
-      class="fixed w-10 h-10 rounded-full bg-[#171d30] hover:bg-[#1e2437] border border-purple-500/30 hover:border-purple-500/50 flex items-center justify-center transition-all duration-300 xl:flex hover:scale-105 group"
+      class="fixed w-10 h-10 rounded-full bg-[#171d30] hover:bg-[#1e2437] border border-purple-500/30 hover:border-purple-500/50 items-center justify-center transition-all duration-300 hidden xl:flex hover:scale-105 group"
       :style="{ 
         top: '30px',
         left: sidebarCollapsed ? '80px' : '256px',
@@ -601,7 +601,7 @@ onMounted(() => {
     </button>
     
     <div 
-      class="pt-4 transition-all duration-300"
+      class="pt-4 transition-all duration-300 ml-0"
       :class="sidebarCollapsed ? 'xl:!ml-20' : 'xl:!ml-64'"
       style="overflow: visible !important"
     >
