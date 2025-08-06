@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useBaseStore, useBlockchain, useFormatter, useMintStore, useStakingStore, useTxDialog } from '@/stores';
+import { useBaseStore, useBlockchain, useFormatter, useMintStore, useStakingStore, useTxDialog, useWalletStore } from '@/stores';
 import { computed } from '@vue/reactivity';
 import { onMounted, ref } from 'vue';
 import { Icon } from '@iconify/vue';
@@ -13,6 +13,7 @@ const format = useFormatter();
 const dialog = useTxDialog();
 const chainStore = useBlockchain();
 const mintStore = useMintStore();
+const walletStore = useWalletStore();
 
 const cache = JSON.parse(localStorage.getItem('avatars') || '{}');
 const avatars = ref(cache || {});
@@ -93,6 +94,26 @@ const change24 = (entry: { consensus_pubkey: Key; tokens: string }) => {
   });
   const coefficient = displayTokens / latestValue;
   return changes.value[txt] * coefficient;
+};
+
+const handleDelegate = (validator: Validator) => {
+  console.log('Delegate clicked for validator:', validator.operator_address);
+  
+  // Check if wallet is connected
+  if (!walletStore.currentAddress) {
+    alert('Please connect your wallet first!');
+    return;
+  }
+  
+  // Open delegation dialog with validator address
+  try {
+    dialog.open('delegate', {
+      validator_address: validator.operator_address,
+    });
+  } catch (error) {
+    console.error('Error opening delegate dialog:', error);
+    alert('Failed to open delegation dialog. Please check console for errors.');
+  }
 };
 
 const change24Text = (entry: { consensus_pubkey: Key; tokens: string }) => {
@@ -430,11 +451,7 @@ loadAvatars();
                   <button
                     v-else
                     class="px-4 py-2 rounded-xl text-xs font-medium bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition-all duration-200 transform hover:scale-105"
-                    @click="
-                      dialog.open('delegate', {
-                        validator_address: v.operator_address,
-                      })
-                    "
+                    @click="handleDelegate(v)"
                   >
                     {{ $t('account.btn_delegate') }}
                   </button>
