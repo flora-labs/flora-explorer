@@ -69,12 +69,12 @@ const options = computed(() => {
         fontSize: '12px',
       },
       y: {
-        formatter: function(val) {
+        formatter: function(val: number) {
           return val + ' transactions'
         }
       },
       x: {
-        formatter: function(val) {
+        formatter: function(val: number) {
           return 'Block #' + val
         }
       }

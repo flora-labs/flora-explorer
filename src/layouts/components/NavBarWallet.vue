@@ -153,7 +153,8 @@ async function connectKeplr() {
     if (accounts.length > 0) {
       walletStore.setConnectedWallet({
         wallet: 'Keplr',
-        address: accounts[0].address,
+        cosmosAddress: accounts[0].address,
+        hdPath: accounts[0].algo || 'secp256k1',
       });
       showWalletSelector.value = false;
       showDrawer.value = true;
@@ -215,7 +216,8 @@ async function connectMetaMask() {
     if (accounts.length > 0) {
       walletStore.setConnectedWallet({
         wallet: 'MetaMask',
-        address: accounts[0],
+        cosmosAddress: accounts[0],
+        hdPath: 'metamask',
       });
       showWalletSelector.value = false;
       showDrawer.value = true;

@@ -1,0 +1,72 @@
+/* Flora Design System Tokens
+   ========================== 
+   Professional, consistent design tokens for the Flora dashboard */
+
+:root {
+  /* Spacing Scale (4px base) */
+  --fl-spacing-1: 0.25rem;  /* 4px */
+  --fl-spacing-2: 0.5rem;   /* 8px */
+  --fl-spacing-3: 0.75rem;  /* 12px */
+  --fl-spacing-4: 1rem;     /* 16px */
+  --fl-spacing-5: 1.5rem;   /* 24px */
+  --fl-spacing-6: 2rem;     /* 32px */
+  --fl-spacing-7: 2.5rem;   /* 40px */
+  --fl-spacing-8: 3rem;     /* 48px */
+
+  /* Border Radius Scale */
+  --fl-radius-sm: 0.25rem;  /* 4px - buttons, chips */
+  --fl-radius-md: 0.5rem;   /* 8px - cards, panels */
+  --fl-radius-lg: 0.75rem;  /* 12px - modals */
+  --fl-radius-xl: 1rem;     /* 16px - hero sections */
+  --fl-radius-full: 9999px; /* pills, avatars */
+
+  /* Glassmorphism (Frost) Scale */
+  --fl-frost-blur: 8px;     /* backdrop-blur-md equivalent */
+  --fl-frost-bg-light: rgba(255, 255, 255, 0.08);
+  --fl-frost-bg-dark: rgba(17, 24, 39, 0.06);
+  --fl-frost-border-light: rgba(255, 255, 255, 0.12);
+  --fl-frost-border-dark: rgba(255, 255, 255, 0.06);
+
+  /* Elevation (Shadow) Scale */
+  --fl-elevation-0: none;
+  --fl-elevation-1: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
+  --fl-elevation-2: 0 4px 12px -2px rgba(0, 0, 0, 0.15);
+  --fl-elevation-3: 0 8px 24px -4px rgba(0, 0, 0, 0.20);
+
+  /* Motion Scale */
+  --fl-motion-quick: 150ms;
+  --fl-motion-base: 200ms;
+  --fl-motion-slow: 300ms;
+  --fl-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --fl-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+
+  /* Semantic Colors */
+  --fl-color-primary: #6366f1;
+  --fl-color-success: #10b981;
+  --fl-color-warning: #f59e0b;
+  --fl-color-error: #ef4444;
+  --fl-color-info: #3b82f6;
+
+  /* Component Sizes */
+  --fl-size-nav-item: 2.25rem;  /* 36px */
+  --fl-size-header: 3.5rem;      /* 56px */
+  --fl-size-statbox: 9rem;       /* 144px */
+  --fl-size-button-sm: 2rem;     /* 32px */
+  --fl-size-button-md: 2.5rem;   /* 40px */
+  --fl-size-button-lg: 3rem;     /* 48px */
+}
+
+/* Dark Mode Overrides */
+.dark {
+  --fl-frost-bg: var(--fl-frost-bg-dark);
+  --fl-frost-border: var(--fl-frost-border-dark);
+  --fl-elevation-1: 0 1px 3px -1px rgba(0, 0, 0, 0.30);
+  --fl-elevation-2: 0 4px 12px -2px rgba(0, 0, 0, 0.40);
+  --fl-elevation-3: 0 8px 24px -4px rgba(0, 0, 0, 0.50);
+}
+
+/* Light Mode Defaults */
+:root:not(.dark) {
+  --fl-frost-bg: var(--fl-frost-bg-light);
+  --fl-frost-border: var(--fl-frost-border-light);
+}

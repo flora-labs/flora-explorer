@@ -5,7 +5,7 @@ import { computed, onMounted, ref } from 'vue';
 import TextElement from '@/components/dynamic/TextElement.vue';
 import DynamicComponent from '@/components/dynamic/DynamicComponent.vue';
 import { codeToHtml } from 'shiki';
-import { useWasmStore } from '@/modules/[chain]/cosmwasm/WasmStore';
+// import { useWasmStore } from '@/modules/[chain]/cosmwasm/WasmStore'; // Module not found
 import { toBase64 } from '@cosmjs/encoding';
 
 import { JsonViewer } from 'vue3-json-viewer';
@@ -54,7 +54,7 @@ const baseurl = 'https://prod.compiler.welldonestudio.io';
 const verification = ref<Verification>({});
 const sourceCode = ref<SourceCode<string>[]>([]);
 const schemas = ref<SourceCode<string>[]>([]);
-const wasmStore = useWasmStore();
+// const wasmStore = useWasmStore(); // Module not found
 const baseStore = useBaseStore();
 const dialog = useTxDialog();
 const result = ref<Record<string, any>>({});
@@ -175,17 +175,18 @@ function callFunction(title: string, method: string, arg: Argument) {
     dialog.open('wasm_execute_contract', { contract: props.contract, execution });
   } else {
     // QueryMsg
-    wasmStore.wasmClient
-      .getWasmContractSmartQuery(
-        props.contract,
-        `{"${method}": ${JSON.stringify(args)}}`
-      )
-      .then((x) => {
-        result.value[`${title}-${method}`] = x;
-      })
-      .catch((err) => {
-        result.value[`${title}-${method}`] = err;
-      });
+    // wasmStore.wasmClient
+    //   .getWasmContractSmartQuery(
+    //     props.contract,
+    //     `{"${method}": ${JSON.stringify(args)}}`
+    //   )
+    //   .then((x: any) => {
+    //     result.value[`${title}-${method}`] = x;
+    //   })
+    //   .catch((err: any) => {
+    //     result.value[`${title}-${method}`] = err;
+    //   });
+    console.warn('WasmStore module not available');
   }
 }
 </script>

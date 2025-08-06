@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import DefaultLayout from './components/DefaultLayout.vue';
+import ResponsiveLayout from './ResponsiveLayout.vue';
 </script>
 
 <template>
-  <DefaultLayout />
+  <ResponsiveLayout />
 </template>

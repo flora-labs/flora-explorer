@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Layout Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Ensure no hidden viewport issues */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+        
+        /* Test that content starts at top */
+        .debug-grid {
+            background-image: 
+                repeating-linear-gradient(0deg, rgba(255,0,0,0.1), rgba(255,0,0,0.1) 1px, transparent 1px, transparent 100px),
+                repeating-linear-gradient(90deg, rgba(255,0,0,0.1), rgba(255,0,0,0.1) 1px, transparent 1px, transparent 100px);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white debug-grid">
+    <!-- This div should appear at the VERY TOP of the viewport -->
+    <div class="bg-red-500 text-white p-4 text-2xl font-bold">
+        THIS SHOULD BE AT TOP
+    </div>
+    
+    <!-- Test the actual layout structure -->
+    <div class="bg-gray-100 dark:bg-gray-900">
+        <!-- Header -->
+        <header class="sticky top-0 z-30 bg-white/10 dark:bg-gray-900/8 backdrop-blur-md border-b border-white/10 dark:border-white/6">
+            <div class="h-14 px-4 flex items-center justify-between">
+                <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                    Menu
+                </button>
+                <div class="flex items-center">
+                    <span class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Flora
+                    </span>
+                </div>
+                <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                    ⋮
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main content -->
+        <main class="w-full">
+            <div class="p-4">
+                <div class="bg-green-500 text-white p-8 text-xl">
+                    Content should start here, directly below header
+                </div>
+                
+                <div class="mt-4 p-4 bg-blue-500 text-white">
+                    More content
+                </div>
+                
+                <div class="mt-4 p-4 bg-purple-500 text-white">
+                    Even more content
+                </div>
+                
+                <!-- Add enough content to scroll -->
+                <div class="mt-4 space-y-4">
+                    <div class="p-4 bg-gray-800">Item 1</div>
+                    <div class="p-4 bg-gray-800">Item 2</div>
+                    <div class="p-4 bg-gray-800">Item 3</div>
+                    <div class="p-4 bg-gray-800">Item 4</div>
+                    <div class="p-4 bg-gray-800">Item 5</div>
+                    <div class="p-4 bg-gray-800">Item 6</div>
+                    <div class="p-4 bg-gray-800">Item 7</div>
+                    <div class="p-4 bg-gray-800">Item 8</div>
+                    <div class="p-4 bg-gray-800">Item 9</div>
+                    <div class="p-4 bg-gray-800">Item 10</div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

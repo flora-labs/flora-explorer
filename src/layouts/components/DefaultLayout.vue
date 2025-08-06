@@ -1,36 +1,30 @@
 <script lang="ts" setup>
 import { Icon } from '@iconify/vue';
-import { computed, ref, onMounted, nextTick } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 
 // Components
 import newFooter from '@/layouts/components/NavFooter.vue';
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue';
 import NavbarSearch from '@/layouts/components/NavbarSearch.vue';
 import ChainProfile from '@/layouts/components/ChainProfile.vue';
-import Sponsors from '@/layouts/components/Sponsors.vue';
+import NavBarI18n from './NavBarI18n.vue';
+import NavBarWallet from './NavBarWallet.vue';
 
 import { useDashboard } from '@/stores/useDashboard';
 import { NetworkType } from '@/types/chaindata';
 import { useBaseStore, useBlockchain } from '@/stores';
-
-import NavBarI18n from './NavBarI18n.vue';
-import NavBarWallet from './NavBarWallet.vue';
-import type {
-  NavGroup,
-  NavLink,
-  NavSectionTitle,
-  VerticalNavItems,
-} from '../types';
+import type { NavGroup, NavLink, NavSectionTitle, VerticalNavItems } from '../types';
 import dayjs from 'dayjs';
-import AdBanner from '@/components/ad/AdBanner.vue';
 
+// Initialize stores
 const dashboard = useDashboard();
 dashboard.initial();
 const blockchain = useBlockchain();
 blockchain.randomSetupEndpoint();
 const baseStore = useBaseStore();
 
-const current = ref(''); // the current chain
+// Track current chain
+const current = ref('');
 const temp = ref('');
 blockchain.$subscribe((m, s) => {
   if (current.value === s.chainName && temp.value != s.endpoint.address) {
@@ -43,35 +37,224 @@ blockchain.$subscribe((m, s) => {
   }
 });
 
-const sidebarShow = ref(false);
-const sidebarOpen = ref(true);
+// Mobile-first state management
+const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
+const mobileMenuOpen = ref(false);
 
-const changeOpen = (index: Number) => {
-  if (index === 0) {
-    sidebarOpen.value = !sidebarOpen.value;
+// Responsive breakpoint handling
+const DESKTOP_BREAKPOINT = 1280;
+const isDesktop = ref(window.innerWidth >= DESKTOP_BREAKPOINT);
+
+const handleResize = () => {
+  const wasDesktop = isDesktop.value;
+  isDesktop.value = window.innerWidth >= DESKTOP_BREAKPOINT;
+  
+  // Reset states when crossing breakpoints
+  if (isDesktop.value && !wasDesktop) {
+    sidebarOpen.value = false; // Close mobile sidebar when switching to desktop
+    mobileMenuOpen.value = false; // Close mobile menu
   }
 };
 
-const toggleSidebar = () => {
-  sidebarCollapsed.value = !sidebarCollapsed.value;
-};
-const showDiscord = window.location.host.search('ping.pub') > -1;
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+  handleResize(); // Initial check
+});
 
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
+// Computed properties for clean class management
+const overlayVisible = computed(() => !isDesktop.value && (sidebarOpen.value || mobileMenuOpen.value));
+
+const sidebarClasses = computed(() => {
+  const baseClasses = [
+    'fixed', 'xl:relative',
+    'top-0', 'left-0', 'h-full', 'xl:h-auto',
+    'z-50',
+    'w-64',
+    'bg-white/10', 'dark:bg-gray-900/8',
+    'backdrop-blur-md', 'backdrop-saturate-150',
+    'border-r', 'border-white/10', 'dark:border-white/6',
+    'transition-transform', 'duration-200', 'ease-out',
+    'overflow-y-auto',
+    'transform'
+  ];
+  
+  // Mobile: slide in/out
+  if (!isDesktop.value) {
+    baseClasses.push(sidebarOpen.value ? 'translate-x-0' : '-translate-x-full');
+  } else {
+    baseClasses.push('xl:translate-x-0');
+    // Desktop: collapsed width
+    if (sidebarCollapsed.value) {
+      baseClasses.push('xl:w-20');
+    } else {
+      baseClasses.push('xl:w-64');
+    }
+  }
+  
+  return baseClasses;
+});
+
+// Methods
+const toggleSidebar = () => sidebarOpen.value = !sidebarOpen.value;
+const closeSidebar = () => sidebarOpen.value = false;
+const toggleCollapsed = () => sidebarCollapsed.value = !sidebarCollapsed.value;
+const toggleMobileMenu = () => mobileMenuOpen.value = !mobileMenuOpen.value;
+const closeMobileMenu = () => mobileMenuOpen.value = false;
+
+// Helper functions for navigation
 function isNavGroup(nav: VerticalNavItems | any): nav is NavGroup {
   return (<NavGroup>nav).children !== undefined;
 }
+
 function isNavLink(nav: VerticalNavItems | any): nav is NavLink {
   return (<NavLink>nav).to !== undefined;
 }
+
 function isNavTitle(nav: VerticalNavItems | any): nav is NavSectionTitle {
   return (<NavSectionTitle>nav).heading !== undefined;
 }
+
 function selected(route: any, nav: NavLink) {
-  const b =
-    route.path === nav.to?.path || (route.path.startsWith(nav.to?.path) && nav.title.indexOf('dashboard') === -1);
+  const b = route.path === nav.to?.path || 
+    (route.path.startsWith(nav.to?.path) && nav.title.indexOf('dashboard') === -1);
   return b;
 }
+
+// Color mapping for navigation groups
+function getNavColorClasses(groupTitle: string | undefined, isActive: boolean) {
+  // Normalize group title
+  const normalizedTitle = groupTitle?.toLowerCase() || '';
+  
+  // First group (index 0) is dashboard items
+  if (!groupTitle || normalizedTitle === 'dashboard' || normalizedTitle === '') {
+    return {
+      iconClass: isActive 
+        ? 'text-purple-700 dark:text-purple-300' 
+        : 'text-purple-600 dark:text-purple-400',
+      textClass: isActive 
+        ? 'text-purple-700 dark:text-purple-300 font-medium' 
+        : 'text-purple-600 dark:text-purple-400',
+      bgClass: isActive
+        ? 'bg-purple-100 dark:bg-purple-900/30'
+        : 'hover:bg-purple-100 dark:hover:bg-purple-900/30'
+    };
+  }
+  
+  // Map each group to its semantic color
+  switch (normalizedTitle) {
+    case 'blockchain':
+      return {
+        iconClass: isActive 
+          ? 'text-blue-700 dark:text-blue-300' 
+          : 'text-blue-600 dark:text-blue-400',
+        textClass: isActive 
+          ? 'text-blue-700 dark:text-blue-300 font-medium' 
+          : 'text-blue-600 dark:text-blue-400',
+        bgClass: isActive
+          ? 'bg-blue-100 dark:bg-blue-900/30'
+          : 'hover:bg-blue-100 dark:hover:bg-blue-900/30'
+      };
+      
+    case 'staking':
+      return {
+        iconClass: isActive 
+          ? 'text-cyan-700 dark:text-cyan-300' 
+          : 'text-cyan-600 dark:text-cyan-400',
+        textClass: isActive 
+          ? 'text-cyan-700 dark:text-cyan-300 font-medium' 
+          : 'text-cyan-600 dark:text-cyan-400',
+        bgClass: isActive
+          ? 'bg-cyan-100 dark:bg-cyan-900/30'
+          : 'hover:bg-cyan-100 dark:hover:bg-cyan-900/30'
+      };
+      
+    case 'governance':
+      return {
+        iconClass: isActive 
+          ? 'text-amber-700 dark:text-amber-300' 
+          : 'text-amber-600 dark:text-amber-400',
+        textClass: isActive 
+          ? 'text-amber-700 dark:text-amber-300 font-medium' 
+          : 'text-amber-600 dark:text-amber-400',
+        bgClass: isActive
+          ? 'bg-amber-100 dark:bg-amber-900/30'
+          : 'hover:bg-amber-100 dark:hover:bg-amber-900/30'
+      };
+      
+    case 'assets':
+      return {
+        iconClass: isActive 
+          ? 'text-green-700 dark:text-green-300' 
+          : 'text-green-600 dark:text-green-400',
+        textClass: isActive 
+          ? 'text-green-700 dark:text-green-300 font-medium' 
+          : 'text-green-600 dark:text-green-400',
+        bgClass: isActive
+          ? 'bg-green-100 dark:bg-green-900/30'
+          : 'hover:bg-green-100 dark:hover:bg-green-900/30'
+      };
+      
+    case 'tools':
+    case 'more':
+      return {
+        iconClass: isActive 
+          ? 'text-indigo-700 dark:text-indigo-300' 
+          : 'text-indigo-600 dark:text-indigo-400',
+        textClass: isActive 
+          ? 'text-indigo-700 dark:text-indigo-300 font-medium' 
+          : 'text-indigo-600 dark:text-indigo-400',
+        bgClass: isActive
+          ? 'bg-indigo-100 dark:bg-indigo-900/30'
+          : 'hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
+      };
+      
+    case 'favorite':
+      return {
+        iconClass: isActive 
+          ? 'text-pink-700 dark:text-pink-300' 
+          : 'text-pink-600 dark:text-pink-400',
+        textClass: isActive 
+          ? 'text-pink-700 dark:text-pink-300 font-medium' 
+          : 'text-pink-600 dark:text-pink-400',
+        bgClass: isActive
+          ? 'bg-pink-100 dark:bg-pink-900/30'
+          : 'hover:bg-pink-100 dark:hover:bg-pink-900/30'
+      };
+      
+    default:
+      return {
+        iconClass: isActive 
+          ? 'text-gray-700 dark:text-gray-300' 
+          : 'text-gray-600 dark:text-gray-400',
+        textClass: isActive 
+          ? 'text-gray-700 dark:text-gray-300 font-medium' 
+          : 'text-gray-600 dark:text-gray-400',
+        bgClass: isActive
+          ? 'bg-gray-100 dark:bg-gray-900/30'
+          : 'hover:bg-gray-100 dark:hover:bg-gray-900/30'
+      };
+  }
+}
+
+// Flatten menu items for mobile
+const flatMenuItems = computed(() => {
+  const items: NavLink[] = [];
+  blockchain.computedChainMenu?.forEach((item: any) => {
+    if (isNavGroup(item)) {
+      items.push(...item.children.filter(isNavLink));
+    } else if (isNavLink(item)) {
+      items.push(item);
+    }
+  });
+  return items;
+});
+
+// Time tracking
 const blocktime = computed(() => {
   return dayjs(baseStore.latest?.block?.header?.time);
 });
@@ -81,597 +264,361 @@ const behind = computed(() => {
   return blocktime.value.isBefore(current);
 });
 
-dayjs();
-
+const showDiscord = window.location.host.search('ping.pub') > -1;
 const show_ad = computed(() => {
   return location.hostname.indexOf('ping.pub') > -1;
 });
-
-// Removed forced dark background to allow proper theme switching
 </script>
 
 <template>
-  <div class="bg-gray-100 dark:bg-[#0f1218]">
-    <!-- sidebar -->
-    <div
-      class="fixed z-50 left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible transition-all duration-300 bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-[#171d30] dark:to-[#0f1218] backdrop-blur-sm border-r border-gray-200/50 dark:border-gray-700/50"
-      :class="[
-        sidebarCollapsed ? 'w-20' : 'w-64',
-        { block: sidebarShow, 'hidden xl:!block': !sidebarShow }
-      ]"
-    >
-      <div class="nav-brand flex items-center relative overflow-visible px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50">
-        <RouterLink :to="`/${blockchain.chainName || 'flora-devnet'}`" class="flex items-center flex-1 overflow-hidden hover:opacity-80 transition-opacity"
-          :class="sidebarCollapsed ? 'justify-center' : ''"
-        >
-          <img class="w-10 h-10 nav-logo flex-shrink-0" src="../../assets/logo.svg" />
-          <h1 
-            class="ml-3 text-xl lg:text-2xl font-semibold text-gray-800 dark:text-gray-100 transition-all duration-300 truncate"
-            :class="sidebarCollapsed ? 'opacity-0 w-0' : 'block'"
-          >
-            {{ blockchain.current?.prettyName || 'Flora Devnet' }}
-          </h1>
-        </RouterLink>
-        
-        <button
-          class="ml-2 p-1.5 rounded-lg hover:bg-gray-200/50 dark:hover:bg-white/10 cursor-pointer xl:!hidden transition-all duration-200"
-          @click="sidebarShow = false"
-          aria-label="Close sidebar"
-        >
-          <Icon icon="mdi:close" class="text-xl text-gray-600 dark:text-gray-400" />
-        </button>
-      </div>
-      <!-- Separator line in collapsed mode -->
-      <div v-if="sidebarCollapsed" class="w-12 h-px bg-gray-300 dark:bg-gray-700 mx-auto mb-4"></div>
-      <div v-for="(item, index) of blockchain.computedChainMenu" :key="index" class="px-2">
-        <!-- For first group (index 0), render children directly without collapse wrapper -->
-        <template v-if="index === 0 && isNavGroup(item)">
-          <div v-if="!sidebarCollapsed">
-            <div v-for="(el, key) of item?.children" :key="key" class="menu w-full !p-0">
-              <RouterLink
-                v-if="isNavLink(el)"
-                @click="sidebarShow = false"
-                class="cursor-pointer flex items-center group relative transition-all duration-200 hover:bg-gray-100/70 dark:hover:bg-white/10 rounded-lg px-2 py-2"
-                :class="{
-                  'bg-purple-500/15 dark:bg-purple-500/20 border-l-2 border-purple-500': selected($route, el),
-                  'justify-center': sidebarCollapsed
-                }"
-                :to="el.to"
-              >
-                <div class="icon-wrapper transition-all duration-300"
-                  :class="[
-                    sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3',
-                    selected($route, el) ? 'text-purple-500 dark:text-purple-400' : (el.iconColor || 'text-gray-600 dark:text-gray-400')
-                  ]"
-                >
-                  <Icon
-                    v-if="el?.icon?.icon"
-                    :icon="el.icon.icon"
-                    class="text-lg transition-all duration-300"
-                  />
-                  <img
-                    v-else-if="el?.icon?.image"
-                    :src="el.icon.image"
-                    class="w-5 h-5 rounded-full"
-                  />
-                  <Icon
-                    v-else
-                    icon="mdi:circle-outline"
-                    class="text-lg"
-                  />
-                </div>
-                <div
-                  v-if="!sidebarCollapsed"
-                  class="text-sm capitalize text-gray-700 dark:text-gray-300 font-medium tracking-wide transition-all duration-300"
-                  :class="{
-                    '!text-purple-600 dark:!text-purple-300 font-semibold': selected($route, el),
-                  }"
-                >
-                  {{ $t(el?.title) }}
-                </div>
-              </RouterLink>
-            </div>
-            <div
-              v-if="dashboard.networkType === NetworkType.Testnet"
-              class="menu w-full !p-0"
-            >
-              <RouterLink
-                class="nav-item cursor-pointer flex items-center group relative hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2 transition-all duration-200"
-                :class="{
-                  'justify-center': sidebarCollapsed
-                }"
-                :to="`/${blockchain.chainName}/faucet`"
-              >
-                <div class="glass-icon-wrapper transition-all duration-300 text-blue-300"
-                  :class="sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3'"
-                >
-                  <Icon icon="mdi:water" class="text-lg" />
-                </div>
-                <div v-if="!sidebarCollapsed" class="text-sm capitalize text-gray-400 font-medium tracking-wide">
-                  Faucet
-                </div>
-                <div v-if="!sidebarCollapsed" class="badge badge-sm text-white glass-badge-pulse ml-auto">New</div>
-              </RouterLink>
-            </div>
-          </div>
-        </template>
-        
-        <!-- For other groups (index > 0), use collapse wrapper -->
-        <div
-          v-else-if="isNavGroup(item) && index > 0"
-          :tabindex="index"
-          class="collapse nav-group mb-2 transition-all duration-300"
-          :class="{
-            'collapse-arrow': item?.children?.length > 0,
-          }"
-        >
-          <input type="checkbox" class="cursor-pointer !h-10 block" @click="changeOpen(index)" />
-          <div
-            class="collapse-title !py-3 px-4 flex items-center cursor-pointer hover:bg-gray-100/50 dark:hover:bg-white/10 transition-all duration-300"
-            :class="sidebarCollapsed ? 'justify-center' : ''"
-          >
-            <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-              <Icon
-                v-if="item?.icon?.icon"
-                :icon="item?.icon?.icon"
-                class="text-xl transition-all duration-300"
-                :class="{
-                  'text-yellow-500 dark:text-yellow-400': item?.title === 'Favorite',
-                  'text-gray-600 dark:text-gray-400': item?.title !== 'Favorite',
-                }"
-              />
-            </div>
-            <div v-if="item?.icon?.image" class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-3'">
-              <img :src="item?.icon?.image" class="w-6 h-6 rounded-full" />
-            </div>
-            <div 
-              class="text-base capitalize flex-1 font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap tracking-wide transition-all duration-300"
-              :class="sidebarCollapsed ? 'hidden' : 'block'"
-            >
-              {{ item?.title }}
-            </div>
-            <div
-              v-if="item?.badgeContent && !sidebarCollapsed"
-              class="mr-6 badge badge-sm text-white glass-badge backdrop-blur-md"
-              :class="item?.badgeClass"
-            >
-              {{ item?.badgeContent }}
-            </div>
-          </div>
-          <div class="collapse-content" v-if="!sidebarCollapsed">
-            <div v-for="(el, key) of item?.children" class="menu w-full !p-0">
-              <RouterLink
-                v-if="isNavLink(el)"
-                @click="sidebarShow = false"
-                class="cursor-pointer flex items-center group relative transition-all duration-200 hover:bg-gray-100/70 dark:hover:bg-white/10 rounded-lg px-2 py-2"
-                :class="{
-                  'bg-purple-500/15 dark:bg-purple-500/20 border-l-2 border-purple-500': selected($route, el),
-                  'justify-center': sidebarCollapsed
-                }"
-                :to="el.to"
-              >
-                <div class="icon-wrapper transition-all duration-300"
-                  :class="[
-                    sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3',
-                    selected($route, el) ? 'text-purple-500 dark:text-purple-400' : (el.iconColor || 'text-gray-600 dark:text-gray-400')
-                  ]"
-                >
-                  <Icon
-                    v-if="el?.icon?.icon"
-                    :icon="el.icon.icon"
-                    class="text-lg transition-all duration-300"
-                  />
-                  <img
-                    v-else-if="el?.icon?.image"
-                    :src="el.icon.image"
-                    class="w-5 h-5 rounded-full"
-                  />
-                  <Icon
-                    v-else
-                    icon="mdi:circle-outline"
-                    class="text-lg"
-                  />
-                </div>
-                <div
-                  v-if="!sidebarCollapsed"
-                  class="text-sm capitalize text-gray-700 dark:text-gray-300 font-medium tracking-wide transition-all duration-300"
-                  :class="{
-                    '!text-purple-600 dark:!text-purple-300 font-semibold': selected($route, el),
-                  }"
-                >
-                  {{ item?.title === 'Favorite' ? el?.title : $t(el?.title) }}
-                </div>
-                <!-- Tooltip for collapsed state -->
-                <div 
-                  v-if="sidebarCollapsed"
-                  class="absolute left-full ml-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-lg"
-                >
-                  {{ item?.title === 'Favorite' ? el?.title : $t(el?.title) }}
-                </div>
-              </RouterLink>
-            </div>
-            <div
-              v-if="index === 0 && dashboard.networkType === NetworkType.Testnet && !sidebarCollapsed"
-              class="menu w-full !p-0"
-            >
-              <RouterLink
-                class="nav-item cursor-pointer flex items-center group relative hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2 transition-all duration-200"
-                :class="{
-                  'justify-center': sidebarCollapsed
-                }"
-                :to="`/${blockchain.chainName}/faucet`"
-              >
-                <div class="glass-icon-wrapper transition-all duration-300 text-blue-300"
-                  :class="sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3'"
-                >
-                  <Icon icon="mdi:water" class="text-lg" />
-                </div>
-                <div v-if="!sidebarCollapsed" class="text-sm capitalize text-gray-400 font-medium tracking-wide">
-                  Faucet
-                </div>
-                <div v-if="!sidebarCollapsed" class="badge badge-sm text-white glass-badge-pulse ml-auto">New</div>
-                <!-- Tooltip for collapsed state -->
-                <div 
-                  v-if="sidebarCollapsed"
-                  class="absolute left-full ml-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-lg"
-                >
-                  Faucet
-                </div>
-              </RouterLink>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Render nav items directly when collapsed -->
-        <template v-if="isNavGroup(item) && sidebarCollapsed && index === 0">
-          <template v-for="(el, key) of item?.children" :key="key">
-            <RouterLink
-              v-if="isNavLink(el)"
-              @click="sidebarShow = false"
-              class="nav-item cursor-pointer flex items-center group relative justify-center mb-2 transition-all duration-200 hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2"
-              :class="{
-                'bg-purple-500/10 border-2 border-purple-500/50 rounded-xl': selected($route, el)
-              }"
-              :to="el.to"
-            >
-            <div class="icon-wrapper transition-all duration-300"
-              :class="selected($route, el) ? 'text-purple-500 dark:text-purple-400' : (el.iconColor || 'text-gray-600 dark:text-gray-400')"
-            >
-              <Icon
-                v-if="el?.icon?.icon"
-                :icon="el.icon.icon"
-                class="text-lg transition-all duration-300"
-              />
-              <img
-                v-else-if="el?.icon?.image"
-                :src="el.icon.image"
-                class="w-5 h-5 rounded-full"
-              />
-              <Icon
-                v-else
-                icon="mdi:circle-outline"
-                class="text-lg"
-              />
-            </div>
-            <!-- Tooltip for collapsed state -->
-            <div 
-              class="absolute left-full ml-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-lg"
-            >
-              {{ $t(el?.title) }}
-            </div>
-          </RouterLink>
-          </template>
-          
-          <!-- Faucet item when collapsed -->
-          <RouterLink
-            v-if="dashboard.networkType === NetworkType.Testnet"
-            class="nav-item cursor-pointer flex items-center group relative justify-center mb-2 hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2"
-            :to="`/${blockchain.chainName}/faucet`"
-          >
-            <div class="glass-icon-wrapper transition-all duration-300 text-blue-300">
-              <Icon icon="mdi:water" class="text-lg" />
-            </div>
-            <!-- Tooltip for collapsed state -->
-            <div 
-              class="absolute left-full ml-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-lg"
-            >
-              Faucet
-            </div>
-          </RouterLink>
-        </template>
-
-        <RouterLink
-          v-if="isNavLink(item)"
-          :to="item?.to"
-          @click="sidebarShow = false"
-          class="nav-item cursor-pointer flex items-center mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/10 rounded-lg px-2 py-2 transition-all duration-200"
-          :class="sidebarCollapsed ? 'justify-center' : ''"
-        >
-          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon
-              v-if="item?.icon?.icon"
-              :icon="item?.icon?.icon"
-              class="text-xl transition-all duration-300 group-hover:scale-110"
-              :class="{
-                'text-yellow-400': item?.title === 'Favorite',
-                'text-gray-400': item?.title !== 'Favorite',
-              }"
-            />
-          </div>
-          <div v-if="item?.icon?.image" class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-3'">
-            <img
-              :src="item?.icon?.image"
-              class="w-6 h-6 rounded-full"
-            />
-          </div>
-          <div 
-            class="text-base capitalize flex-1 font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap tracking-wide transition-all duration-300"
-            :class="sidebarCollapsed ? 'hidden' : 'block'"
-          >
-            {{ item?.title }}
-          </div>
-          <div
-            v-if="item?.badgeContent && !sidebarCollapsed"
-            class="badge badge-sm text-white"
-            :class="item?.badgeClass"
-          >
-            {{ item?.badgeContent }}
-          </div>
-          <!-- Tooltip when collapsed -->
-          <div 
-            v-if="sidebarCollapsed"
-            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
-          >
-            {{ item?.title }}
-          </div>
-        </RouterLink>
-        <div
-          v-if="isNavTitle(item)"
-          class="nav-section text-gray-500 dark:text-gray-500 font-semibold text-xs uppercase tracking-wider px-2 mb-2"
-        >
-          {{ item?.heading }}
-        </div>
-      </div>
-      <div class="px-2 mt-4">
-        <div class="nav-section text-gray-500 dark:text-gray-500 font-semibold text-xs uppercase tracking-wider px-2 mb-2" v-if="!sidebarCollapsed">Tools</div>
-        <RouterLink
-          to="/wallet/suggest"
-          class="nav-item flex items-center cursor-pointer mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-lg px-2 py-2 transition-all duration-200"
-          :class="sidebarCollapsed ? 'justify-center' : ''"
-        >
-          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon icon="mdi:wallet-plus" class="text-xl text-purple-600 dark:text-purple-400" />
-          </div>
-          <div 
-            class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
-            :class="sidebarCollapsed ? 'hidden' : 'block'"
-          >
-            Wallet Helper
-          </div>
-          <!-- Tooltip when collapsed -->
-          <div 
-            v-if="sidebarCollapsed"
-            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
-          >
-            Wallet Helper
-          </div>
-        </RouterLink>
-        <div
-          v-if="showDiscord"
-          class="nav-section text-gray-500 dark:text-gray-500 font-semibold text-xs uppercase tracking-wider px-2 mb-2"
-        >
-          {{ $t('module.sponsors') }}
-        </div>
-        <Sponsors v-if="showDiscord && !sidebarCollapsed" />
-        <div class="nav-section text-gray-500 dark:text-gray-500 font-semibold text-xs uppercase tracking-wider px-2 mb-2" v-if="!sidebarCollapsed">{{ $t('module.links') }}</div>
-        <a
-          href="https://twitter.com/flora_network"
-          target="_blank"
-          class="nav-item flex items-center cursor-pointer mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-lg px-2 py-2 transition-all duration-200"
-          :class="sidebarCollapsed ? 'justify-center' : ''"
-        >
-          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon icon="simple-icons:x" class="text-xl text-sky-600 dark:text-sky-400" />
-          </div>
-          <div 
-            class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
-            :class="sidebarCollapsed ? 'hidden' : 'block'"
-          >
-            X (Twitter)
-          </div>
-          <!-- Tooltip when collapsed -->
-          <div 
-            v-if="sidebarCollapsed"
-            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
-          >
-            X (Twitter)
-          </div>
-        </a>
-        <a
-          v-if="showDiscord"
-          href="https://discord.com/invite/CmjYVSr6GW"
-          target="_blank"
-          class="nav-item flex items-center cursor-pointer mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-lg px-2 py-2 transition-all duration-200"
-          :class="sidebarCollapsed ? 'justify-center' : ''"
-        >
-          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon icon="mdi:discord" class="text-xl text-gray-600 dark:text-gray-400" />
-          </div>
-          <div 
-            class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
-            :class="sidebarCollapsed ? 'hidden' : 'block'"
-          >
-            Discord
-          </div>
-          <!-- Tooltip when collapsed -->
-          <div 
-            v-if="sidebarCollapsed"
-            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
-          >
-            Discord
-          </div>
-        </a>
-        <a
-          href="https://flora.network"
-          target="_blank"
-          class="nav-item flex items-center cursor-pointer mb-2 group relative hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-lg px-2 py-2 transition-all duration-200"
-          :class="sidebarCollapsed ? 'justify-center' : ''"
-        >
-          <div class="icon-wrapper" :class="sidebarCollapsed ? 'mr-0' : 'mr-2'">
-            <Icon icon="mdi:frequently-asked-questions" class="text-xl text-amber-600 dark:text-amber-400" />
-          </div>
-          <div 
-            class="text-base capitalize flex-1 font-medium text-gray-300 tracking-wide transition-all duration-300"
-            :class="sidebarCollapsed ? 'hidden' : 'block'"
-          >
-            FAQ
-          </div>
-          <!-- Tooltip when collapsed -->
-          <div 
-            v-if="sidebarCollapsed"
-            class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50"
-          >
-            FAQ
-          </div>
-        </a>
-      </div>
-    </div>
+  <!-- Root container - NO HEIGHT CONSTRAINTS ON MOBILE -->
+  <div class="bg-gray-100 dark:bg-gray-900 xl:flex xl:min-h-screen overflow-x-hidden">
     
-    <!-- Collapse Toggle Button -->
-    <button
-      @click="toggleSidebar"
-      class="fixed w-10 h-10 rounded-full bg-white/90 dark:bg-[#171d30]/90 hover:bg-white/95 dark:hover:bg-[#1e2437]/90 backdrop-blur-sm border border-purple-500/30 dark:border-purple-500/40 hover:border-purple-500/50 dark:hover:border-purple-500/60 items-center justify-center transition-all duration-300 hidden xl:flex hover:scale-105 group shadow-lg dark:shadow-purple-500/20"
-      :style="{ 
-        top: '30px',
-        left: sidebarCollapsed ? '80px' : '256px',
-        zIndex: 2001,
-        transform: 'translateX(-50%)',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), 0 0 12px rgba(147, 51, 234, 0.15)'
-      }"
-    >
-      <Icon 
-        :icon="sidebarCollapsed ? 'mdi:chevron-right' : 'mdi:chevron-left'" 
-        class="text-lg text-purple-400 group-hover:text-purple-300 transition-colors"
+    <!-- Mobile Overlay -->
+    <Transition name="fade">
+      <div 
+        v-if="overlayVisible"
+        class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 xl:hidden transition-opacity duration-300 ease-out"
+        @click="() => { closeSidebar(); closeMobileMenu(); }"
       />
-    </button>
+    </Transition>
     
-    <div 
-      class="pt-4 transition-all duration-300 ml-0"
-      :class="sidebarCollapsed ? 'xl:!ml-20' : 'xl:!ml-64'"
-      style="overflow: visible !important"
-    >
-      <!-- header -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4" style="overflow: visible !important; position: relative; z-index: 100;">
-        <div
-          class="flex items-center py-3 backdrop-blur-sm bg-gradient-to-r from-white/90 via-white/85 to-white/80 dark:from-gray-900/80 dark:via-gray-800/75 dark:to-gray-900/70 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg dark:shadow-[0_4px_20px_0_rgba(0,0,0,0.5)] px-6 relative z-[100]"
-          style="overflow: visible !important"
-        >
-          <div
-            class="text-2xl pr-3 cursor-pointer xl:!hidden group"
-            @click="sidebarShow = true"
+    <!-- Sidebar -->
+    <aside :class="sidebarClasses">
+      <!-- Sidebar Header -->
+      <div class="sticky top-0 z-10 bg-white/10 dark:bg-gray-900/8 backdrop-blur-md border-b border-white/10 dark:border-white/6">
+        <div class="flex items-center h-14 px-4">
+          <RouterLink 
+            :to="`/${blockchain.chainName || 'flora-devnet'}`" 
+            class="flex items-center flex-1 overflow-hidden"
+            @click="closeSidebar"
           >
-            <Icon icon="mdi-menu" class="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors" />
-          </div>
-
-          <ChainProfile />
-
-          <div class="flex-1 w-0"></div>
-
-          <!-- <NavSearchBar />-->
-          <NavBarI18n class="hidden md:!inline-block" />
-          <NavbarThemeSwitcher class="!inline-block" />
-          <NavbarSearch class="!inline-block" />
-          <NavBarWallet />
+            <img class="w-8 h-8 flex-shrink-0" src="../../assets/logo.svg" alt="Logo" />
+            <span 
+              v-if="!isDesktop || !sidebarCollapsed"
+              class="ml-3 text-lg font-semibold truncate bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 dark:from-emerald-300 dark:via-teal-300 dark:to-cyan-300 bg-clip-text text-transparent"
+            >
+              {{ blockchain.current?.prettyName || 'Flora Devnet' }}
+            </span>
+          </RouterLink>
+          
+          <!-- Mobile close button -->
+          <button
+            v-if="!isDesktop"
+            @click="closeSidebar"
+            class="p-2 rounded-full bg-white/8 dark:bg-gray-900/6 hover:bg-white/12 dark:hover:bg-gray-900/10 transition-all duration-200 ease-out xl:hidden"
+            aria-label="Close sidebar"
+          >
+            <Icon icon="mdi:close" class="text-xl text-gray-600 dark:text-gray-400" />
+          </button>
         </div>
       </div>
-
-      <!-- 👉 Pages -->
-      <div style="min-height: calc(100vh - 180px)">
-        <div v-if="behind" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-          <div class="alert alert-error">
-            <div class="flex gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                class="stroke-current flex-shrink-0 w-6 h-6"
+      
+      <!-- Navigation -->
+      <nav class="px-2 py-4">
+        <!-- Mobile: Flat list -->
+        <ul v-if="!isDesktop" class="space-y-1">
+          <li v-for="item in flatMenuItems" :key="item.to?.path">
+            <RouterLink
+              :to="item.to"
+              @click="closeSidebar"
+              class="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ease-out"
+              :class="selected($route, item) ? 'bg-white/10 dark:bg-gray-900/10 shadow-sm' : 'hover:bg-white/8 dark:hover:bg-gray-900/8'"
+            >
+              <Icon 
+                v-if="item.icon?.icon"
+                :icon="item.icon.icon" 
+                class="text-xl flex-shrink-0 text-current transition-colors duration-200"
+                :class="selected($route, item) ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'"
+              />
+              <span class="ml-3 text-base font-medium" :class="selected($route, item) ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'">{{ $t(item.title) }}</span>
+            </RouterLink>
+          </li>
+        </ul>
+        
+        <!-- Desktop: Grouped with collapse support -->
+        <div v-else class="space-y-4">
+          <template v-for="(group, index) in blockchain.computedChainMenu" :key="index">
+            <!-- First group without wrapper -->
+            <template v-if="index === 0 && isNavGroup(group)">
+              <ul class="space-y-1">
+                <li v-for="item in group.children" :key="item.to?.path">
+                  <RouterLink
+                    v-if="isNavLink(item)"
+                    :to="item.to"
+                    class="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ease-out"
+                    :class="[
+                      selected($route, item) ? 'bg-white/10 dark:bg-gray-900/10 shadow-sm' : 'hover:bg-white/8 dark:hover:bg-gray-900/8',
+                      sidebarCollapsed ? 'justify-center' : ''
+                    ]"
+                    :title="sidebarCollapsed ? $t(item.title) : undefined"
+                  >
+                    <Icon 
+                      v-if="item.icon?.icon"
+                      :icon="item.icon.icon" 
+                      class="text-xl flex-shrink-0 text-current transition-colors duration-200"
+                      :class="selected($route, item) ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'"
+                    />
+                    <span v-if="!sidebarCollapsed" class="ml-3 text-base font-medium" :class="selected($route, item) ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'">{{ $t(item.title) }}</span>
+                  </RouterLink>
+                </li>
+              </ul>
+            </template>
+            
+            <!-- Other groups with headers -->
+            <div v-else-if="isNavGroup(group) && index > 0">
+              <h3 
+                v-if="!sidebarCollapsed"
+                class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 opacity-70"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-              <span
-                >{{ $t('pages.out_of_sync') }} {{ blocktime.format() }} ({{
-                  blocktime.fromNow()
-                }})</span
-              >
+                {{ group.title }}
+              </h3>
+              <ul class="space-y-1">
+                <li v-for="item in group.children" :key="item.to?.path">
+                  <RouterLink
+                    v-if="isNavLink(item)"
+                    :to="item.to"
+                    class="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ease-out"
+                    :class="[
+                      selected($route, item) ? 'bg-white/10 dark:bg-gray-900/10 shadow-sm' : 'hover:bg-white/8 dark:hover:bg-gray-900/8',
+                      sidebarCollapsed ? 'justify-center' : ''
+                    ]"
+                    :title="sidebarCollapsed ? (group.title === 'Favorite' ? item.title : $t(item.title)) : undefined"
+                  >
+                    <Icon 
+                      v-if="item.icon?.icon"
+                      :icon="item.icon.icon" 
+                      class="text-xl flex-shrink-0 text-current transition-colors duration-200"
+                      :class="selected($route, item) ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'"
+                    />
+                    <span v-if="!sidebarCollapsed" class="ml-3 text-base font-medium" :class="selected($route, item) ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'">
+                      {{ group.title === 'Favorite' ? item.title : $t(item.title) }}
+                    </span>
+                  </RouterLink>
+                </li>
+              </ul>
             </div>
+            
+            <!-- Single nav links -->
+            <RouterLink
+              v-else-if="isNavLink(group)"
+              :to="group.to"
+              class="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ease-out hover:bg-white/8 dark:hover:bg-gray-900/8"
+              :class="{
+                'justify-center': sidebarCollapsed
+              }"
+              :title="sidebarCollapsed ? group.title : undefined"
+            >
+              <Icon 
+                v-if="group.icon?.icon"
+                :icon="group.icon.icon" 
+                class="text-xl flex-shrink-0 text-current text-gray-700 dark:text-gray-300 transition-colors duration-200"
+              />
+              <span v-if="!sidebarCollapsed" class="ml-3 text-base font-medium text-gray-700 dark:text-gray-300">{{ group.title }}</span>
+            </RouterLink>
+            
+            <!-- Section titles -->
+            <h3 
+              v-else-if="isNavTitle(group) && !sidebarCollapsed"
+              class="px-3 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+            >
+              {{ group.heading }}
+            </h3>
+          </template>
+        </div>
+      </nav>
+      
+      <!-- Sidebar Footer Links -->
+      <div class="px-2 pb-4 mt-auto border-t border-white/10 dark:border-white/6 pt-4">
+        <div v-if="!sidebarCollapsed" class="px-3 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider opacity-70">
+          Links
+        </div>
+        <ul class="space-y-1">
+          <li>
+            <a 
+              href="https://twitter.com/flora_network"
+              target="_blank"
+              class="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ease-out hover:bg-white/8 dark:hover:bg-gray-900/8"
+              :class="{ 'justify-center': sidebarCollapsed }"
+              :title="sidebarCollapsed ? 'X (Twitter)' : undefined"
+            >
+              <Icon icon="simple-icons:x" class="text-xl flex-shrink-0 text-current text-gray-700 dark:text-gray-300" />
+              <span v-if="!sidebarCollapsed" class="ml-3 text-base font-medium text-gray-700 dark:text-gray-300">X (Twitter)</span>
+            </a>
+          </li>
+          <li>
+            <a 
+              href="https://flora.network"
+              target="_blank"
+              class="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ease-out hover:bg-white/8 dark:hover:bg-gray-900/8"
+              :class="{ 'justify-center': sidebarCollapsed }"
+              :title="sidebarCollapsed ? 'FAQ' : undefined"
+            >
+              <Icon icon="mdi:frequently-asked-questions" class="text-xl flex-shrink-0 text-current text-gray-700 dark:text-gray-300" />
+              <span v-if="!sidebarCollapsed" class="ml-3 text-base font-medium text-gray-700 dark:text-gray-300">FAQ</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <div class="w-full xl:flex-1 xl:flex xl:flex-col">
+      <!-- Header -->
+      <header class="sticky top-0 z-30 bg-white/10 dark:bg-gray-900/8 backdrop-blur-md border-b border-white/10 dark:border-white/6">
+        <div class="h-14 px-4 flex items-center justify-between xl:px-6">
+          <!-- Left: Mobile menu / Desktop collapse -->
+          <div class="flex items-center">
+            <button
+              v-if="!isDesktop"
+              @click="toggleSidebar"
+              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Open navigation"
+            >
+              <Icon icon="mdi:menu" class="text-xl text-gray-600 dark:text-gray-400" />
+            </button>
+            
+            <button
+              v-else
+              @click="toggleCollapsed"
+              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              :aria-expanded="!sidebarCollapsed"
+              aria-label="Toggle sidebar"
+            >
+              <Icon 
+                :icon="sidebarCollapsed ? 'mdi:chevron-right' : 'mdi:chevron-left'"
+                class="text-xl text-gray-600 dark:text-gray-400"
+              />
+            </button>
+            
+            <!-- Chain Profile (Desktop) -->
+            <ChainProfile v-if="isDesktop" class="ml-4" />
+          </div>
+          
+          <!-- Center: Logo (Mobile) -->
+          <div v-if="!isDesktop" class="flex items-center">
+            <img class="w-8 h-8" src="../../assets/logo.svg" alt="Logo" />
+            <span class="ml-2 text-lg font-semibold text-gray-900 dark:text-white">
+              Flora
+            </span>
+          </div>
+          
+          <!-- Right: Actions -->
+          <div class="flex items-center space-x-2">
+            <!-- Desktop controls -->
+            <template v-if="isDesktop">
+              <NavbarSearch />
+              <NavBarI18n />
+              <NavbarThemeSwitcher />
+              <NavBarWallet />
+            </template>
+            
+            <!-- Mobile menu button -->
+            <button
+              v-else
+              @click="toggleMobileMenu"
+              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Open menu"
+            >
+              <Icon icon="mdi:dots-vertical" class="text-xl text-gray-600 dark:text-gray-400" />
+            </button>
           </div>
         </div>
-        <RouterView v-slot="{ Component }">
-          <Transition mode="out-in">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <AdBanner v-if="show_ad" />
+      </header>
+      
+      <!-- Alert Banner -->
+      <div v-if="behind" class="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+        <div class="px-4 py-3 flex items-center">
+          <Icon icon="mdi:alert-circle" class="text-red-500 mr-2" />
+          <span class="text-sm text-red-700 dark:text-red-400">
+            {{ $t('pages.out_of_sync') }} {{ blocktime.format() }} ({{ blocktime.fromNow() }})
+          </span>
+        </div>
+      </div>
+      
+      <!-- Page Content -->
+      <main class="w-full xl:flex-1 xl:overflow-auto">
+        <div class="p-4 xl:p-6">
+          <RouterView v-slot="{ Component }">
+            <Transition mode="out-in">
               <Component :is="Component" />
-            </div>
-          </Transition>
-        </RouterView>
-      </div>
-
+            </Transition>
+          </RouterView>
+        </div>
+      </main>
+      
+      <!-- Footer -->
       <newFooter />
     </div>
+    
+    <!-- Mobile Menu Sheet -->
+    <Transition name="slide-up">
+      <div
+        v-if="mobileMenuOpen"
+        class="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl max-h-[70vh] overflow-auto"
+      >
+        <div class="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between h-14 px-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Menu</h2>
+            <button
+              @click="closeMobileMenu"
+              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Close menu"
+            >
+              <Icon icon="mdi:close" class="text-xl text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-4 space-y-4">
+          <ChainProfile class="w-full" />
+          <NavbarSearch class="w-full" />
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Theme</span>
+            <NavbarThemeSwitcher />
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Language</span>
+            <NavBarI18n />
+          </div>
+          <NavBarWallet class="w-full" />
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
-<style>
-/* Ensure width transitions work properly */
-.w-20, .w-64 {
-  transition: width 0.3s ease !important;
+<style scoped>
+/* Transition animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-/* Allow overflow for collapse button */
-.nav-brand {
-  overflow: visible !important;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
-/* Collapsed nav adjustments */
-.w-20 .nav-section {
-  display: none;
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s ease;
 }
 
-.w-20 .collapse-content {
-  display: none !important;
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
 }
 
-/* Smooth transitions for all nav elements */
-.nav * {
-  transition: all 0.3s ease;
+/* Ensure smooth transitions */
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Active nav item styling */
-.nav-item {
-  transition: all 0.2s ease;
-}
-
-/* Light theme active states - more subtle */
-html:not(.dark) .nav-item-active {
-  background: rgba(147, 51, 234, 0.1) !important;
-  border-color: rgba(147, 51, 234, 0.4) !important;
-}
-
-html:not(.dark) .nav-item:hover {
-  background: rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Dark theme active states */
-html.dark .nav-item-active {
-  background: rgba(147, 51, 234, 0.1) !important;
-}
-
-html.dark .nav-item-active:hover {
-  background: rgba(147, 51, 234, 0.15) !important;
+.transition-colors {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 </style>

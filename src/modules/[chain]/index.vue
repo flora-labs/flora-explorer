@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useBlockchain, useFormatter, useTxDialog, useWalletStore, useStakingStore, useParamStore, useBankStore, useMintStore, useGovStore, useBaseStore } from '@/stores';
 import { useDistributionStore } from '@/stores/useDistributionStore';
-import { onMounted, ref, watchEffect, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watchEffect, watch } from 'vue';
 import { computed } from '@vue/reactivity';
 import { Icon } from '@iconify/vue';
 import CardStatisticsVertical from '@/components/CardStatisticsVertical.vue';
@@ -32,6 +32,9 @@ const animatedSupply = ref(0);
 const animatedBonded = ref(0);
 const animatedPool = ref(0);
 const isLoading = ref(true);
+
+// Check if desktop
+const isDesktop = ref(window.innerWidth >= 1280);
 
 // Version info
 interface VersionInfo {
@@ -88,6 +91,7 @@ watch(() => baseStore.latest?.block?.header?.height, (newVal) => {
 onMounted(async () => {
   walletStore.loadMyAsset();
   paramStore.handleAbciInfo();
+  stakingStore.init();
   
   // Remove loading state after delay
   setTimeout(() => {
@@ -148,349 +152,577 @@ const floraStats = computed(() => {
     totalSupply: totalSupply.value || (supply?.amount ? format.formatToken({ amount: supply.amount, denom: supply.denom || 'uflora' }) : '0'),
     bondedTokens: pool?.bonded_tokens ? format.formatToken({ amount: pool.bonded_tokens, denom: 'uflora' }) : '0',
     inflation: inflation ? `${(Number(inflation) * 100).toFixed(2)}%` : '0%',
-    communityPool: communityPool.value && communityPool.value[0] ? format.formatToken(communityPool.value[0]) : '0'
+    communityPool: communityPool.value && communityPool.value[0] ? format.formatToken(communityPool.value[0]) : '0',
+    validatorCount: stakingStore.validators?.length || 0
   };
 });
 </script>
 
 <template>
-  <div class="min-h-screen py-4 sm:py-8 lg:py-12">
-    <!-- Background Effects -->
-    <div class="fixed inset-0 -z-10">
-      <!-- Light mode gradient - soft purple/blue gradient like Flora website -->
-      <div class="absolute inset-0 bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 dark:from-blue-900/10 dark:via-transparent dark:to-blue-900/10"></div>
-      <!-- Overlay gradient for depth -->
-      <div class="absolute inset-0 bg-gradient-to-t from-white/40 via-transparent to-white/20 dark:from-transparent dark:via-transparent dark:to-transparent"></div>
-      <!-- Grid pattern -->
-      <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-      <!-- Floating orbs for animation -->
-      <div class="absolute top-20 left-20 w-72 h-72 bg-purple-300/20 dark:bg-purple-600/10 rounded-full blur-3xl animate-float-slow"></div>
-      <div class="absolute bottom-20 right-20 w-96 h-96 bg-blue-300/20 dark:bg-blue-600/10 rounded-full blur-3xl animate-float-slower"></div>
-    </div>
-    
-    <!-- Content - Mobile Optimized -->
-    <div class="space-y-4 sm:space-y-6 lg:space-y-8">
-        <!-- Header Section - Modern Glassmorphic Design -->
-        <div v-if="blockchain.current" class="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-white/70 via-white/60 to-white/50 dark:from-gray-900/80 dark:via-gray-900/70 dark:to-gray-900/60 backdrop-blur-sm border border-white/50 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] dark:shadow-2xl before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-50/30 before:via-transparent before:to-purple-50/30 dark:before:from-blue-900/10 dark:before:to-purple-900/10 before:-z-10 animate-slide-down">
-            <!-- Animated gradient orb -->
-            <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/20 dark:from-blue-600/10 dark:via-purple-600/10 dark:to-pink-600/10 rounded-full blur-3xl transform translate-x-48 -translate-y-48 animate-pulse-slow"></div>
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 relative z-10">
+  <div class="space-y-3 sm:space-y-4 min-w-0">
+        <!-- Header Section -->
+        <div v-if="blockchain.current" class="relative overflow-hidden rounded-2xl p-3 sm:p-6 
+                    bg-white/10 dark:bg-gray-900/8 
+                    backdrop-blur-md backdrop-saturate-150
+                    border border-white/10 dark:border-white/6
+                    shadow-sm hover:shadow-md
+                    transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-400/5 to-teal-600/5 pointer-events-none"></div>
+            
+            <div class="relative z-10 flex items-center justify-between">
               <!-- Main Content -->
-              <div class="flex-1">
-                <div class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-                  <img src="/logo.svg" class="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 hover:scale-110 transition-transform duration-300" alt="Flora Logo" />
-                  <h1 class="text-2xl sm:text-3xl lg:text-5xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent animate-gradient">
-                    {{ blockchain.current?.prettyName || 'Flora' }}
-                  </h1>
-                </div>
+              <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+                <!-- Logo without container -->
+                <img src="/logo.svg" class="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" alt="Flora Logo" />
+                
+                <!-- Gradient title text -->
+                <h1 class="text-xl sm:text-3xl font-bold bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-400 
+                           dark:from-emerald-300 dark:via-teal-300 dark:to-cyan-300 
+                           bg-clip-text text-transparent truncate">
+                  {{ blockchain.current?.prettyName || 'Flora Devnet' }}
+                </h1>
               </div>
               
-              <!-- Action Icons Panel - Responsive -->
-              <div class="flex gap-3 sm:gap-4 items-center justify-end sm:justify-start">
-                <!-- Discord Bot Avatar -->
+              <!-- Action Icons - simplified for mobile -->
+              <div class="flex gap-2 sm:gap-3 items-center flex-shrink-0">
+                <!-- Discord button - icon only on mobile -->
                 <a 
                   href="https://discord.flora.network" 
                   target="_blank"
-                  class="group relative backdrop-blur-sm bg-gradient-to-br from-indigo-500/30 to-purple-500/30 hover:from-indigo-500/40 hover:to-purple-500/40 rounded-full overflow-hidden border-2 border-indigo-500/30 transition-all duration-300 transform hover:scale-110 hover:rotate-3"
+                  class="group inline-flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full
+                         border border-white/15 dark:border-white/10
+                         backdrop-blur-sm
+                         transition-all duration-200 ease-out
+                         hover:scale-[1.05] hover:bg-white/10 dark:hover:bg-white/5
+                         focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                         focus-visible:outline-purple-500/60"
                   title="Join Flora Discord"
                 >
                   <img 
                     :src="DiscordBotAvatar" 
                     alt="Flora Discord Bot" 
-                    class="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-cover"
+                    class="w-6 h-6 rounded-full object-cover"
                   />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </a>
                 
-                <!-- AI Robot Avatar -->
+                <!-- Dev Portal button - icon only on mobile -->
                 <a 
                   href="https://dev.flora.network"
                   target="_blank"
-                  class="group relative backdrop-blur-sm bg-gradient-to-br from-blue-500/30 to-indigo-500/30 hover:from-blue-500/40 hover:to-indigo-500/40 rounded-full border-2 border-blue-500/30 transition-all duration-300 transform hover:scale-110 hover:-rotate-3 w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 flex items-center justify-center"
+                  class="group inline-flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full
+                         border border-white/15 dark:border-white/10
+                         backdrop-blur-sm
+                         transition-all duration-200 ease-out
+                         hover:scale-[1.05] hover:bg-white/10 dark:hover:bg-white/5
+                         focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                         focus-visible:outline-blue-500/60"
                   title="Flora Dev Portal"
                 >
-                  <Icon icon="mdi:robot-excited" class="text-2xl sm:text-3xl lg:text-4xl text-blue-400 group-hover:text-blue-300 transition-colors" />
+                  <Icon icon="mdi:robot-excited" class="text-xl text-blue-500 dark:text-blue-400" />
                 </a>
               </div>
             </div>
         </div>
 
-        <!-- Top Statistics Grid - Icy Glassmorphic with animations -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+        <!-- Top Statistics Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <!-- Block Height -->
-        <div class="stat-card relative overflow-hidden rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 bg-gradient-to-br from-white/80 via-white/70 to-white/60 dark:from-gray-900/70 dark:via-gray-900/60 dark:to-gray-900/50 backdrop-blur-sm border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none before:absolute before:inset-0 before:bg-gradient-to-br before:from-amber-50/20 before:to-orange-50/20 dark:before:from-amber-900/5 dark:before:to-orange-900/5 before:-z-10 hover:shadow-[0_8px_32px_0_rgba(31,38,135,0.25)] hover:scale-[1.02] hover:-translate-y-1 transition-all duration-500 group animate-slide-up" style="animation-delay: 100ms;">
-          <!-- Shimmer effect -->
-          <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-          <div class="absolute top-0 right-0 w-20 sm:w-24 lg:w-32 h-20 sm:h-24 lg:h-32 bg-gradient-to-br from-amber-400/20 to-orange-400/20 dark:from-amber-500/10 dark:to-orange-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8 animate-pulse-slow"></div>
-          <div class="relative z-10">
-            <div class="flex items-center justify-between mb-1 sm:mb-2">
-              <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Block Height</div>
-              <Icon icon="mdi:cube-outline" class="text-lg sm:text-xl lg:text-2xl text-amber-500/70 dark:text-amber-400/70" />
-            </div>
-            <div class="text-base sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent truncate">
-              <span v-if="isLoading" class="inline-block w-20 h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></span>
-              <span v-else class="transition-all duration-300 inline-block group-hover:scale-110">
-                #{{ animatedHeight || baseStore.latest?.block?.header?.height || '0' }}
-              </span>
+        <div class="group relative min-h-[5.5rem] sm:h-32">
+          <!-- Premium glass card with multi-layer effects -->
+          <div class="relative overflow-hidden rounded-2xl p-3 h-full 
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent pointer-events-none"></div>
+            <!-- Reflective glare layer -->
+            <!-- Glare removed for cleaner look -->
+            
+            <!-- Content -->
+            <div class="relative z-10">
+              <div class="flex items-start justify-between mb-2">
+                <!-- Icon chip -->
+                <div class="grid place-content-center w-10 h-10 sm:w-12 sm:h-12 rounded-full
+                            bg-amber-500/10 dark:bg-amber-400/5
+                            group-hover:scale-105 transition-transform duration-200">
+                  <Icon icon="mdi:cube-outline" class="text-xl sm:text-2xl text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+              
+              <h3 class="text-[10px] sm:text-xs font-semibold tracking-wider text-amber-700/80 dark:text-amber-300/70 uppercase">Block Height</h3>
+              <p class="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-br from-amber-600 to-orange-600 dark:from-amber-300 dark:to-orange-400 bg-clip-text text-transparent mt-1">
+                {{ animatedHeight || baseStore.latest?.block?.header?.height || '0' }}
+              </p>
             </div>
           </div>
         </div>
         
         <!-- Total Supply -->
-        <div class="stat-card relative overflow-hidden rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 bg-gradient-to-br from-white/80 via-white/70 to-white/60 dark:from-gray-900/70 dark:via-gray-900/60 dark:to-gray-900/50 backdrop-blur-sm border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none before:absolute before:inset-0 before:bg-gradient-to-br before:from-purple-50/20 before:to-blue-50/20 dark:before:from-purple-900/5 dark:before:to-blue-900/5 before:-z-10 hover:shadow-[0_8px_32px_0_rgba(31,38,135,0.25)] hover:scale-[1.02] hover:-translate-y-1 transition-all duration-500 group animate-slide-up" style="animation-delay: 200ms;">
-          <!-- Shimmer effect -->
-          <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-          <div class="absolute top-0 right-0 w-20 sm:w-24 lg:w-32 h-20 sm:h-24 lg:h-32 bg-gradient-to-br from-purple-400/20 to-blue-400/20 dark:from-purple-500/10 dark:to-blue-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8 animate-pulse-slow"></div>
-          <div class="relative z-10">
-            <div class="flex items-center justify-between mb-1 sm:mb-2">
-              <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Total Supply</div>
-              <Icon icon="mdi:cash-multiple" class="text-lg sm:text-xl lg:text-2xl text-purple-500/70 dark:text-purple-400/70" />
-            </div>
-            <div class="text-base sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent truncate">
-              <span v-if="isLoading" class="inline-block w-24 h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></span>
-              <span v-else class="transition-all duration-300 inline-block group-hover:scale-110">
+        <div class="group relative min-h-[5.5rem] sm:h-32">
+          <!-- Premium glass card with multi-layer effects -->
+          <div class="relative overflow-hidden rounded-2xl p-3 h-full 
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent pointer-events-none"></div>
+            <!-- Reflective glare layer -->
+            <!-- Glare removed for cleaner look -->
+            
+            <!-- Content -->
+            <div class="relative z-10">
+              <div class="flex items-start justify-between mb-2">
+                <!-- Icon chip -->
+                <div class="grid place-content-center w-10 h-10 sm:w-12 sm:h-12 rounded-full
+                            bg-purple-500/10 dark:bg-purple-400/5
+                            group-hover:scale-105 transition-transform duration-200">
+                  <Icon icon="mdi:cash-multiple" class="text-xl sm:text-2xl text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
+              
+              <h3 class="text-[10px] sm:text-xs font-semibold tracking-wider text-purple-700/80 dark:text-purple-300/70 uppercase">Total Supply</h3>
+              <p class="text-sm sm:text-lg lg:text-xl font-bold bg-gradient-to-br from-purple-600 to-fuchsia-600 dark:from-purple-300 dark:to-fuchsia-400 bg-clip-text text-transparent mt-1 truncate">
                 {{ floraStats.totalSupply }}
-              </span>
+              </p>
             </div>
           </div>
         </div>
         
         <!-- Bonded Tokens -->
-        <div class="stat-card relative overflow-hidden rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 bg-gradient-to-br from-white/80 via-white/70 to-white/60 dark:from-gray-900/70 dark:via-gray-900/60 dark:to-gray-900/50 backdrop-blur-sm border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-50/20 before:to-cyan-50/20 dark:before:from-blue-900/5 dark:before:to-cyan-900/5 before:-z-10 hover:shadow-[0_8px_32px_0_rgba(31,38,135,0.25)] hover:scale-[1.02] hover:-translate-y-1 transition-all duration-500 group animate-slide-up" style="animation-delay: 300ms;">
-          <!-- Shimmer effect -->
-          <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-          <div class="absolute top-0 right-0 w-20 sm:w-24 lg:w-32 h-20 sm:h-24 lg:h-32 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 dark:from-blue-500/10 dark:to-cyan-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8 animate-pulse-slow"></div>
-          <div class="relative z-10">
-            <div class="flex items-center justify-between mb-1 sm:mb-2">
-              <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Bonded Tokens</div>
-              <Icon icon="mdi:lock" class="text-lg sm:text-xl lg:text-2xl text-blue-500/70 dark:text-blue-400/70" />
-            </div>
-            <div class="text-base sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent truncate">
-              <span v-if="isLoading" class="inline-block w-24 h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></span>
-              <span v-else class="transition-all duration-300 inline-block group-hover:scale-110">
+        <div class="group relative min-h-[5.5rem] sm:h-32">
+          <!-- Premium glass card with multi-layer effects -->
+          <div class="relative overflow-hidden rounded-2xl p-3 h-full 
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent pointer-events-none"></div>
+            <!-- Reflective glare layer -->
+            <!-- Glare removed for cleaner look -->
+            
+            <!-- Content -->
+            <div class="relative z-10">
+              <div class="flex items-start justify-between mb-2">
+                <!-- Icon chip -->
+                <div class="grid place-content-center w-10 h-10 sm:w-12 sm:h-12 rounded-full
+                            bg-blue-500/10 dark:bg-blue-400/5
+                            group-hover:scale-105 transition-transform duration-200">
+                  <Icon icon="mdi:lock" class="text-xl sm:text-2xl text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+              
+              <h3 class="text-[10px] sm:text-xs font-semibold tracking-wider text-blue-700/80 dark:text-blue-300/70 uppercase">Bonded Tokens</h3>
+              <p class="text-sm sm:text-lg lg:text-xl font-bold bg-gradient-to-br from-blue-600 to-cyan-600 dark:from-blue-300 dark:to-cyan-400 bg-clip-text text-transparent mt-1 truncate">
                 {{ floraStats.bondedTokens }}
-              </span>
+              </p>
             </div>
           </div>
         </div>
         
         <!-- Community Pool -->
-        <div class="stat-card relative overflow-hidden rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 bg-gradient-to-br from-white/80 via-white/70 to-white/60 dark:from-gray-900/70 dark:via-gray-900/60 dark:to-gray-900/50 backdrop-blur-sm border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none before:absolute before:inset-0 before:bg-gradient-to-br before:from-green-50/20 before:to-emerald-50/20 dark:before:from-green-900/5 dark:before:to-emerald-900/5 before:-z-10 hover:shadow-[0_8px_32px_0_rgba(31,38,135,0.25)] hover:scale-[1.02] hover:-translate-y-1 transition-all duration-500 group animate-slide-up" style="animation-delay: 400ms;">
-          <!-- Shimmer effect -->
-          <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-          <div class="absolute top-0 right-0 w-20 sm:w-24 lg:w-32 h-20 sm:h-24 lg:h-32 bg-gradient-to-br from-green-400/20 to-emerald-400/20 dark:from-green-500/10 dark:to-emerald-500/10 rounded-full blur-3xl transform translate-x-8 -translate-y-8 animate-pulse-slow"></div>
-          <div class="relative z-10">
-            <div class="flex items-center justify-between mb-1 sm:mb-2">
-              <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Community Pool</div>
-              <Icon icon="mdi:bank" class="text-lg sm:text-xl lg:text-2xl text-green-500/70 dark:text-green-400/70" />
-            </div>
-            <div class="text-base sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent truncate">
-              <span v-if="isLoading" class="inline-block w-24 h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></span>
-              <span v-else class="transition-all duration-300 inline-block group-hover:scale-110">
-                {{ floraStats.communityPool }}
-              </span>
-            </div>
-          </div>
-        </div>
-        </div>
-
-        <!-- Content Grid - Mobile Optimized -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
-        <!-- Main Content Area - Mobile Optimized -->
-        <div class="lg:col-span-2 space-y-4 sm:space-y-5 lg:space-y-6">
-          <!-- Stats Cards Section - Icy Glassmorphic -->
-          <div v-if="blockchain.supportModule('staking') || blockchain.supportModule('bank')" 
-               class="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-white/80 via-white/70 to-white/60 dark:from-gray-900/80 dark:via-gray-900/70 dark:to-gray-900/60 backdrop-blur-sm border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-50/10 before:via-transparent before:to-purple-50/10 dark:before:from-blue-900/5 dark:before:to-purple-900/5 before:-z-10 hover:scale-[1.01] transition-all duration-500 animate-fade-in group">
-            <!-- Background decoration -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-400/10 dark:from-blue-500/5 dark:to-purple-500/5 rounded-full blur-3xl transform translate-x-32 -translate-y-32 animate-float-slow"></div>
+        <div class="group relative min-h-[5.5rem] sm:h-32">
+          <!-- Premium glass card with multi-layer effects -->
+          <div class="relative overflow-hidden rounded-2xl p-3 h-full 
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-transparent pointer-events-none"></div>
+            <!-- Reflective glare layer -->
+            <!-- Glare removed for cleaner look -->
             
-            <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-5 lg:mb-6 flex items-center gap-2">
-              <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 animate-pulse-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-              Network Statistics
-            </h2>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <CardStatisticsVertical
-                v-if="blockchain.supportModule('staking')"
-                :stats="format.formatToken({ amount: stakingStore.pool?.bonded_tokens || '0', denom: 'uflora' })"
-                :change="Number(stakingStore.pool?.bonded_tokens || 0)"
-                title="Bonded Tokens"
-                subtitle="Total bonded tokens"
-                :icon="'mdi:lock'"
-                color="info"
-                class="transition-all duration-200 hover:scale-[1.02]"
-              />
-              
-              <CardStatisticsVertical
-                v-if="blockchain.supportModule('bank')"
-                :stats="totalSupply || '0'"
-                title="Total Supply"
-                subtitle="Total FLORA supply"
-                :icon="'mdi:cash-multiple'"
-                color="success"
-                class="transition-all duration-200 hover:scale-[1.02]"
-              />
-              
-              <CardStatisticsVertical
-                v-if="blockchain.supportModule('mint')"
-                :stats="`${(Number(mintStore?.inflation || 0) * 100).toFixed(2)}%`"
-                title="Inflation"
-                subtitle="Current inflation rate"
-                :icon="'mdi:chart-line'"
-                color="warning"
-                class="transition-all duration-200 hover:scale-[1.02]"
-              />
-              
-              <CardStatisticsVertical
-                v-if="blockchain.supportModule('distribution')"
-                :stats="format.formatToken((communityPool && communityPool[0]) || {})"
-                title="Community Pool"
-                subtitle="Available funds"
-                :icon="'mdi:bank'"
-                color="primary"
-                class="transition-all duration-200 hover:scale-[1.02]"
-              />
-            </div>
-          </div>
-
-          <!-- Active Proposals - Icy Glassmorphic -->
-          <div v-if="blockchain.supportModule('governance')" 
-               class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/50 via-white/30 to-white/20 dark:from-white/10 dark:via-white/5 dark:to-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none hover:scale-[1.01] transition-all duration-500 animate-fade-in group">
-            <div class="p-4 sm:p-5 lg:p-6 border-b border-gray-200 dark:border-white/10">
-              <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-purple-600 dark:text-purple-400 animate-pulse-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                </svg>
-                {{ $t('index.active_proposals') }}
-              </h2>
-            </div>
-            <div class="p-4 sm:p-5 lg:p-6">
-              <div v-if="govStore?.proposals?.['2'] && Array.isArray(govStore?.proposals?.['2']) && govStore?.proposals?.['2']?.length > 0" class="space-y-4">
-                <ProposalListItem
-                  v-for="(item, index) in govStore?.proposals?.['2'] || []"
-                  :key="index"
-                  :proposal="item"
-                />
-              </div>
-              <div v-else class="text-center py-12">
-                <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4 animate-float" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                </svg>
-                <p class="text-gray-600 dark:text-gray-400">{{ $t('index.no_active_proposals') }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sidebar - Mobile Optimized -->
-        <div class="space-y-4 sm:space-y-5 lg:space-y-6">
-          <!-- Wallet Section - Icy Glassmorphic -->
-          <div v-if="walletStore.currentAddress" 
-               class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/50 via-white/30 to-white/20 dark:from-white/10 dark:via-white/5 dark:to-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none hover:scale-[1.01] transition-all duration-500 animate-fade-in group">
-            <div class="p-4 sm:p-5 lg:p-6 border-b border-gray-200 dark:border-white/10">
-              <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-green-600 dark:text-green-400 animate-pulse-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                </svg>
-                {{ $t('index.wallet') }}
-              </h2>
-            </div>
-            <div class="p-4 sm:p-5 lg:p-6">
-              <div class="space-y-3 sm:space-y-4 mb-4 sm:mb-5 lg:mb-6">
-                <div class="bg-gray-50 dark:bg-white/5 backdrop-blur rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-white/10 group-hover:bg-gray-100 dark:group-hover:bg-white/10 transition-colors duration-300">
-                  <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ format.formatToken(walletStore.balanceOfStakingToken) }}</p>
-                  <p class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ walletStore.balanceOfStakingToken.amount }}</p>
+            <!-- Content -->
+            <div class="relative z-10">
+              <div class="flex items-start justify-between mb-2">
+                <!-- Icon chip -->
+                <div class="grid place-content-center w-10 h-10 sm:w-12 sm:h-12 rounded-full
+                            bg-green-500/10 dark:bg-green-400/5
+                            group-hover:scale-105 transition-transform duration-200">
+                  <Icon icon="mdi:bank" class="text-xl sm:text-2xl text-green-600 dark:text-green-400" />
                 </div>
               </div>
               
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                <button class="w-full backdrop-blur-md bg-blue-500/20 hover:bg-blue-500/30 text-blue-600 dark:text-blue-300 font-medium py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl border border-blue-500/30 transition-all duration-200 text-sm sm:text-base hover:scale-105 hover:shadow-lg"
-                        @click="dialog.open('send', {})">
-                  {{ $t('account.send') }}
-                </button>
-                <button class="w-full backdrop-blur-md bg-purple-500/20 hover:bg-purple-500/30 text-purple-600 dark:text-purple-300 font-medium py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl border border-purple-500/30 transition-all duration-200 text-sm sm:text-base hover:scale-105 hover:shadow-lg"
-                        @click="dialog.open('delegate', {})">
-                  {{ $t('account.delegate') }}
-                </button>
-                <button class="w-full backdrop-blur-md bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-600 dark:text-cyan-300 font-medium py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl border border-cyan-500/30 transition-all duration-200 text-sm sm:text-base hover:scale-105 hover:shadow-lg"
-                        @click="dialog.open('transfer', {})">
-                  {{ $t('account.transfer') }}
-                </button>
+              <h3 class="text-[10px] sm:text-xs font-semibold tracking-wider text-green-700/80 dark:text-green-300/70 uppercase">Community Pool</h3>
+              <p class="text-sm sm:text-lg lg:text-xl font-bold bg-gradient-to-br from-green-600 to-teal-600 dark:from-green-300 dark:to-teal-400 bg-clip-text text-transparent mt-1 truncate">
+                {{ floraStats.communityPool }}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        </div>
+
+        <!-- Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-w-0">
+        <!-- Main Content Area -->
+        <div class="lg:col-span-2 space-y-6 min-w-0">
+          <!-- Network Statistics -->
+          <div v-if="blockchain.supportModule('staking') || blockchain.supportModule('bank')" 
+               class="relative overflow-hidden rounded-2xl p-4 sm:p-6
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent pointer-events-none"></div>
+            
+            <div class="relative z-10">
+              <h2 class="text-lg font-semibold mb-6 flex items-center gap-3">
+                <div class="h-10 w-10 flex items-center justify-center rounded-full
+                            bg-gradient-to-br from-blue-400/20 to-cyan-600/10
+                            backdrop-blur-md">
+                  <Icon icon="mdi:chart-line" class="text-xl text-blue-500 dark:text-blue-400" />
+                </div>
+                <span class="bg-gradient-to-br from-blue-400 via-cyan-400 to-teal-400 
+                             dark:from-blue-300 dark:via-cyan-300 dark:to-teal-300 
+                             bg-clip-text text-transparent">
+                  Network Statistics
+                </span>
+              </h2>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CardStatisticsVertical
+                  v-if="blockchain.supportModule('staking')"
+                  :stats="format.formatToken({ amount: stakingStore.pool?.bonded_tokens || '0', denom: 'uflora' })"
+                  :change="Number(stakingStore.pool?.bonded_tokens || 0)"
+                  title="Bonded Tokens"
+                  subtitle="Total bonded tokens"
+                  :icon="'mdi:lock'"
+                  color="info"
+                  class="relative overflow-hidden rounded-xl p-4
+                         bg-white/5 dark:bg-gray-900/5
+                         border border-white/10 dark:border-white/5
+                         shadow-[0_2px_6px_-2px_rgba(0,0,0,0.1)]
+                         transition-all duration-150 ease-out
+                         hover:scale-[1.005] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.15)]"
+                />
+                
+                <CardStatisticsVertical
+                  v-if="blockchain.supportModule('bank')"
+                  :stats="totalSupply || '0'"
+                  title="Total Supply"
+                  subtitle="Total FLORA supply"
+                  :icon="'mdi:cash-multiple'"
+                  color="success"
+                  class="relative overflow-hidden rounded-xl p-4
+                         bg-white/5 dark:bg-gray-900/5
+                         border border-white/10 dark:border-white/5
+                         shadow-[0_2px_6px_-2px_rgba(0,0,0,0.1)]
+                         transition-all duration-150 ease-out
+                         hover:scale-[1.005] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.15)]"
+                />
+                
+                <CardStatisticsVertical
+                  v-if="blockchain.supportModule('mint')"
+                  :stats="`${(Number(mintStore?.inflation || 0) * 100).toFixed(2)}%`"
+                  title="Inflation"
+                  subtitle="Current inflation rate"
+                  :icon="'mdi:chart-line'"
+                  color="warning"
+                  class="relative overflow-hidden rounded-xl p-4
+                         bg-white/5 dark:bg-gray-900/5
+                         border border-white/10 dark:border-white/5
+                         shadow-[0_2px_6px_-2px_rgba(0,0,0,0.1)]
+                         transition-all duration-150 ease-out
+                         hover:scale-[1.005] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.15)]"
+                />
+                
+                <CardStatisticsVertical
+                  v-if="blockchain.supportModule('distribution')"
+                  :stats="format.formatToken((communityPool && communityPool[0]) || {})"
+                  title="Community Pool"
+                  subtitle="Available funds"
+                  :icon="'mdi:bank'"
+                  color="primary"
+                  class="relative overflow-hidden rounded-xl p-4
+                         bg-white/5 dark:bg-gray-900/5
+                         border border-white/10 dark:border-white/5
+                         shadow-[0_2px_6px_-2px_rgba(0,0,0,0.1)]
+                         transition-all duration-150 ease-out
+                         hover:scale-[1.005] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.15)]"
+                />
               </div>
             </div>
           </div>
 
-          <!-- Application Version - Icy Glassmorphic -->
-          <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/50 via-white/30 to-white/20 dark:from-white/10 dark:via-white/5 dark:to-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none hover:scale-[1.01] transition-all duration-500 animate-fade-in">
-            <div class="p-4 sm:p-5 lg:p-6 border-b border-gray-200 dark:border-white/10">
-              <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                {{ $t('index.app_versions') }}
-              </h2>
+          <!-- Active Proposals -->
+          <div v-if="blockchain.supportModule('governance')" 
+               class="relative overflow-hidden rounded-2xl
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-purple-400/5 to-fuchsia-600/5 pointer-events-none"></div>
+            
+            <div class="relative z-10">
+              <div class="p-6 border-b border-white/10 dark:border-white/5">
+                <h2 class="text-lg font-semibold flex items-center gap-3">
+                  <div class="h-10 w-10 flex items-center justify-center rounded-full
+                              bg-gradient-to-br from-purple-400/20 to-fuchsia-600/10
+                              backdrop-blur-md">
+                    <Icon icon="mdi:clipboard-text-outline" class="text-xl text-purple-500 dark:text-purple-400" />
+                  </div>
+                  <span class="bg-gradient-to-br from-purple-400 via-fuchsia-400 to-pink-400 
+                               dark:from-purple-300 dark:via-fuchsia-300 dark:to-pink-300 
+                               bg-clip-text text-transparent">
+                    {{ $t('index.active_proposals') }}
+                  </span>
+                </h2>
+              </div>
+              <div class="p-6">
+                <div v-if="govStore?.proposals?.['2'] && Array.isArray(govStore?.proposals?.['2']) && govStore?.proposals?.['2']?.length > 0" class="space-y-3">
+                  <div v-for="(item, index) in govStore?.proposals?.['2'] || []"
+                       :key="index"
+                       class="relative overflow-hidden rounded-xl p-4
+                              bg-white/8 dark:bg-gray-900/6
+                              backdrop-blur-md border border-white/10 dark:border-white/6
+                              shadow-sm
+                              transition-all duration-200 ease-out
+                              hover:scale-[1.01] hover:shadow-md
+                              group">
+                    <ProposalListItem :proposal="item" />
+                  </div>
+                </div>
+                <div v-else class="text-center py-12">
+                  <div class="h-14 w-14 mx-auto flex items-center justify-center rounded-full
+                              bg-white/10 backdrop-blur-md
+                              text-white/50 dark:text-white/40 mb-4">
+                    <Icon icon="mdi:inbox-outline" class="text-3xl" />
+                  </div>
+                  <p class="text-white/60 dark:text-white/50">{{ $t('index.no_active_proposals') }}</p>
+                </div>
+              </div>
             </div>
-            <div class="p-4 sm:p-5 lg:p-6">
-              <ArrayObjectElement
-                :value="paramStore.appVersion?.items"
-                :thead="false"
-              />
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6 min-w-0">
+          <!-- Wallet Section -->
+          <div v-if="walletStore.currentAddress" 
+               class="relative overflow-hidden rounded-2xl
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-green-400/5 to-emerald-600/5 pointer-events-none"></div>
+            
+            <div class="relative z-10">
+              <div class="p-6 border-b border-white/10 dark:border-white/5">
+                <h2 class="text-lg font-semibold flex items-center gap-3">
+                  <div class="h-10 w-10 flex items-center justify-center rounded-full
+                              bg-gradient-to-br from-green-400/20 to-emerald-600/10
+                              backdrop-blur-md">
+                    <Icon icon="mdi:wallet" class="text-xl text-green-500 dark:text-green-400" />
+                  </div>
+                  <span class="bg-gradient-to-br from-green-400 via-emerald-400 to-teal-400 
+                               dark:from-green-300 dark:via-emerald-300 dark:to-teal-300 
+                               bg-clip-text text-transparent">
+                    {{ $t('index.wallet') }}
+                  </span>
+                </h2>
+              </div>
+              <div class="p-6">
+                <!-- Balance Card -->
+                <div class="mb-5 relative overflow-hidden rounded-xl p-4
+                            bg-white/8 dark:bg-gray-900/6
+                            backdrop-blur-md border border-white/10 dark:border-white/6
+                            shadow-sm">
+                  <p class="text-xs font-medium text-white/70 dark:text-white/60 uppercase tracking-wider mb-1">Balance</p>
+                  <p class="text-2xl font-bold bg-gradient-to-br from-emerald-400 via-green-400 to-teal-400 
+                            dark:from-emerald-300 dark:via-green-300 dark:to-teal-300 
+                            bg-clip-text text-transparent">
+                    {{ format.formatToken(walletStore.balanceOfStakingToken) }}
+                  </p>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-3 gap-2">
+                  <!-- Send Button -->
+                  <button class="group relative overflow-hidden rounded-full px-3 py-2
+                                 bg-white/8 dark:bg-gray-900/6 border border-white/10 dark:border-white/6
+                                 backdrop-blur-md text-sm font-medium
+                                 transition-all duration-200 ease-out
+                                 hover:scale-[1.02] hover:shadow-md
+                                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                                 focus-visible:outline-blue-500/60"
+                          @click="dialog.open('send', {})">
+                    <span class="relative z-10 flex items-center justify-center gap-1">
+                      <Icon icon="mdi:send" class="text-base text-blue-400" />
+                      <span class="text-blue-300">{{ $t('account.send') }}</span>
+                    </span>
+                    <span class="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                  </button>
+                  
+                  <!-- Delegate Button -->
+                  <button class="group relative overflow-hidden rounded-full px-3 py-2
+                                 bg-white/6 dark:bg-gray-900/6 border border-white/20 dark:border-white/15
+                                 backdrop-blur-2xl text-sm font-medium
+                                 transition-all duration-150 ease-out
+                                 hover:scale-[1.03] hover:shadow-[0_6px_18px_-6px_rgba(168,85,247,0.4)]
+                                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                                 focus-visible:outline-purple-500/60"
+                          @click="dialog.open('delegate', {})">
+                    <span class="relative z-10 flex items-center justify-center gap-1">
+                      <Icon icon="mdi:account-convert" class="text-base text-purple-400" />
+                      <span class="text-purple-300">{{ $t('account.delegate') }}</span>
+                    </span>
+                    <span class="absolute inset-0 bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                  </button>
+                  
+                  <!-- Transfer Button -->
+                  <button class="group relative overflow-hidden rounded-full px-3 py-2
+                                 bg-white/6 dark:bg-gray-900/6 border border-white/20 dark:border-white/15
+                                 backdrop-blur-2xl text-sm font-medium
+                                 transition-all duration-150 ease-out
+                                 hover:scale-[1.03] hover:shadow-[0_6px_18px_-6px_rgba(6,182,212,0.4)]
+                                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                                 focus-visible:outline-cyan-500/60"
+                          @click="dialog.open('transfer', {})">
+                    <span class="relative z-10 flex items-center justify-center gap-1">
+                      <Icon icon="mdi:swap-horizontal" class="text-base text-cyan-400" />
+                      <span class="text-cyan-300">{{ $t('account.transfer') }}</span>
+                    </span>
+                    <span class="absolute inset-0 bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Node Info - Icy Glassmorphic -->
-          <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/50 via-white/30 to-white/20 dark:from-white/10 dark:via-white/5 dark:to-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none hover:scale-[1.01] transition-all duration-500 animate-fade-in">
-            <div class="p-4 sm:p-5 lg:p-6 border-b border-gray-200 dark:border-white/10">
-              <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-pulse-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
-                </svg>
-                {{ $t('index.node_info') }}
-              </h2>
+          <!-- Application Version -->
+          <div class="relative overflow-hidden rounded-2xl
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-amber-600/5 pointer-events-none"></div>
+            
+            <div class="relative z-10">
+              <div class="p-6 border-b border-white/10 dark:border-white/5">
+                <h2 class="text-lg font-semibold flex items-center gap-3">
+                  <div class="h-10 w-10 flex items-center justify-center rounded-full
+                              bg-gradient-to-br from-yellow-400/20 to-amber-600/10
+                              backdrop-blur-md">
+                    <Icon icon="mdi:information-outline" class="text-xl text-yellow-500 dark:text-yellow-400" />
+                  </div>
+                  <span class="bg-gradient-to-br from-yellow-400 via-amber-400 to-orange-400 
+                               dark:from-yellow-300 dark:via-amber-300 dark:to-orange-300 
+                               bg-clip-text text-transparent">
+                    {{ $t('index.app_versions') }}
+                  </span>
+                </h2>
+              </div>
+              <div class="p-6">
+                <ArrayObjectElement
+                  :value="paramStore.appVersion?.items"
+                  :thead="false"
+                />
+              </div>
             </div>
-            <div class="p-4 sm:p-5 lg:p-6">
-              <ArrayObjectElement
-                :value="paramStore.nodeVersion?.items || {}"
-              />
+          </div>
+
+          <!-- Node Info -->
+          <div class="relative overflow-hidden rounded-2xl
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-indigo-400/5 to-blue-600/5 pointer-events-none"></div>
+            
+            <div class="relative z-10">
+              <div class="p-6 border-b border-white/10 dark:border-white/5">
+                <h2 class="text-lg font-semibold flex items-center gap-3">
+                  <div class="h-10 w-10 flex items-center justify-center rounded-full
+                              bg-gradient-to-br from-indigo-400/20 to-blue-600/10
+                              backdrop-blur-md">
+                    <Icon icon="mdi:server" class="text-xl text-indigo-500 dark:text-indigo-400" />
+                  </div>
+                  <span class="bg-gradient-to-br from-indigo-400 via-blue-400 to-cyan-400 
+                               dark:from-indigo-300 dark:via-blue-300 dark:to-cyan-300 
+                               bg-clip-text text-transparent">
+                    {{ $t('index.node_info') }}
+                  </span>
+                </h2>
+              </div>
+              <div class="p-6">
+                <ArrayObjectElement
+                  :value="paramStore.nodeVersion?.items || {}"
+                />
+              </div>
             </div>
           </div>
           
-          <!-- Deployment Version - Icy Glassmorphic -->
-          <div v-if="versionInfo" class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/50 via-white/30 to-white/20 dark:from-white/10 dark:via-white/5 dark:to-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-none hover:scale-[1.01] transition-all duration-500 animate-fade-in">
-            <div class="p-3 sm:p-4 lg:p-6">
-              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
-                </svg>
-                Deployment Version
-              </h2>
-              <div class="text-xs space-y-1 text-gray-600 dark:text-gray-400">
-                <div>Build: <span class="font-mono">{{ versionInfo?.gitHash }}</span></div>
-                <div>{{ versionInfo?.buildTime ? new Date(versionInfo.buildTime).toLocaleString() : '' }}</div>
+          <!-- Deployment Version -->
+          <div v-if="versionInfo" class="relative overflow-hidden rounded-2xl
+                      bg-white/10 dark:bg-gray-900/8 
+                      backdrop-blur-md backdrop-saturate-150
+                      border border-white/10 dark:border-white/6
+                      shadow-sm hover:shadow-md
+                      transition-all duration-200 ease-out">
+            <!-- Glass tint layer -->
+            <div class="absolute inset-0 bg-gradient-to-br from-gray-400/5 to-slate-600/5 pointer-events-none"></div>
+            
+            <div class="relative z-10">
+              <div class="p-6 border-b border-white/10 dark:border-white/5">
+                <h2 class="text-lg font-semibold flex items-center gap-3">
+                  <div class="h-10 w-10 flex items-center justify-center rounded-full
+                              bg-gradient-to-br from-gray-400/20 to-slate-600/10
+                              backdrop-blur-md">
+                    <Icon icon="mdi:source-branch" class="text-xl text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <span class="bg-gradient-to-br from-gray-400 via-slate-400 to-zinc-400 
+                               dark:from-gray-300 dark:via-slate-300 dark:to-zinc-300 
+                               bg-clip-text text-transparent">
+                    Deployment Version
+                  </span>
+                </h2>
+              </div>
+              <div class="p-6">
+                <div class="space-y-3">
+                  <div class="flex items-center gap-2">
+                    <Icon icon="mdi:git" class="text-sm text-gray-500 dark:text-gray-400" />
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Build:</span>
+                    <span class="font-mono text-sm bg-gradient-to-r from-gray-600 to-slate-600 dark:from-gray-300 dark:to-slate-300 bg-clip-text text-transparent font-semibold">
+                      {{ versionInfo?.gitHash?.slice(0, 8) }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <Icon icon="mdi:calendar" class="text-sm text-gray-500 dark:text-gray-400" />
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Deployed:</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                      {{ versionInfo?.buildTime ? new Date(versionInfo.buildTime).toLocaleDateString() : '' }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 
 <style scoped>
-/* Smooth transitions for interactive elements */
-.backdrop-blur-xl {
-  transition: all 0.3s ease;
-}
-
-/* Subtle hover effect for glass cards */
-.backdrop-blur-xl:hover {
-  transform: translateY(-2px);
-}
-
-/* Shimmer effect for glass surfaces */
+/* Minimal necessary styles */
 @keyframes shimmer {
   0% {
     background-position: -1000px 0;
@@ -695,6 +927,76 @@ const floraStats = computed(() => {
 
 .stat-card:hover::before {
   left: 100%;
+}
+
+/* Glassmorphic card shine animation */
+@keyframes glass-shine {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Glass sweep animation for reflective glare */
+@keyframes glass-sweep {
+  0% {
+    transform: translateX(-100%) rotate(15deg);
+  }
+  100% {
+    transform: translateX(400%) rotate(15deg);
+  }
+}
+
+/* Premium glassmorphic effects */
+.stat-glass {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add pseudo-elements for multi-layer glass effect */
+.stat-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.03) 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.stat-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(75deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.03) 35%,
+      transparent 40%),
+    radial-gradient(circle at top left,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 70%);
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .stat-glass,
+  .glass-glare,
+  .stat-glass::before,
+  .stat-glass::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>
 
