@@ -1,12 +1,12 @@
 {
   "chain_name": "flora-devnet",
-  "chain_id": "flora_7668378-1",
+  "chain_id": "flora_7668378-1", 
   "pretty_name": "Flora Devnet",
-  "api": ["http://127.0.0.1:1317", "http://52.9.17.25:1317", "http://50.18.34.12:1317", "http://204.236.162.240:1317"],
-  "rpc": ["http://127.0.0.1:26657", "http://52.9.17.25:26657", "http://50.18.34.12:26657", "http://204.236.162.240:26657"],
+  "api": ["https://testnet-api.flora.network", "http://50.18.34.12:1317", "http://204.236.162.240:1317"],
+  "rpc": ["https://testnet-rpc.flora.network", "http://52.9.17.25:26657", "http://50.18.34.12:26657"],
   "evm": {
     "chainId": "0x75029a",
-    "rpc": ["http://127.0.0.1:8545", "http://52.9.17.25:8545", "http://50.18.34.12:8545", "http://204.236.162.240:8545"]
+    "rpc": ["https://testnet-evm.flora.network", "http://52.9.17.25:8545", "http://50.18.34.12:8545"]
   },
   "coingecko": "",
   "snapshot_provider": "",
@@ -31,31 +31,5 @@
         "exponent": 18
       }
     ]
-  }],
-  "theme": {
-    "primary": "#B8E4F5",
-    "bg": {
-      "base": "#0F1823",
-      "card": "rgba(30, 41, 59, 0.7)",
-      "hover": "rgba(51, 65, 85, 0.5)"
-    },
-    "text": {
-      "base": "#E2E8F0",
-      "muted": "#94A3B8",
-      "heading": "#F1F5F9"
-    },
-    "border": "rgba(100, 116, 139, 0.3)",
-    "glassmorphism": {
-      "enabled": true,
-      "blur": "backdrop-blur-md",
-      "overlay": "bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-indigo-500/10",
-      "shadow": "shadow-xl shadow-blue-500/20",
-      "border": "border border-white/20"
-    },
-    "effects": {
-      "frost": "before:absolute before:inset-0 before:bg-gradient-to-tr before:from-white/10 before:via-transparent before:to-white/5",
-      "shimmer": "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/10 after:to-transparent after:animate-shimmer",
-      "glow": "ring-2 ring-sky-400/20 ring-offset-2 ring-offset-transparent"
-    }
-  }
+  }]
 }

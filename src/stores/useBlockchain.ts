@@ -66,10 +66,11 @@ export const useBlockchain = defineStore('blockchain', {
         } else {
           document.body.style.setProperty('--p', '237.65 100% 70%');
         }
+        // Create a single navigation group without the redundant chain name
         currNavItem = [
           {
-            title: this.current?.prettyName || this.chainName || '',
-            icon: { image: this.current.logo, size: '22' },
+            title: 'Navigation',
+            icon: { icon: 'mdi:menu', size: '22' },
             i18n: false,
             badgeContent: this.isConsumerChain ? 'Consumer' : undefined,
             badgeClass: 'bg-error',

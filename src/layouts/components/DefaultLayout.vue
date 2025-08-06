@@ -147,15 +147,15 @@ onMounted(() => {
       }"
     >
       <div class="glass-nav-brand flex justify-between items-center relative overflow-visible">
-        <RouterLink to="/flora-devnet" class="flex items-center overflow-hidden"
+        <RouterLink :to="`/${blockchain.chainName || 'flora-devnet'}`" class="flex items-center overflow-hidden hover:opacity-80 transition-opacity"
           :class="sidebarCollapsed ? 'justify-center w-full' : ''"
         >
           <img class="w-10 h-10 glass-nav-logo flex-shrink-0" src="../../assets/logo.svg" />
           <h1 
-            class="ml-3 text-2xl font-semibold glass-nav-title transition-all duration-300 whitespace-nowrap"
+            class="ml-3 text-2xl font-semibold glass-nav-title transition-all duration-300 whitespace-nowrap capitalize"
             :class="sidebarCollapsed ? 'opacity-0 w-0' : 'flex-1 opacity-100'"
           >
-            Flora
+            {{ blockchain.current?.prettyName || 'Flora Devnet' }}
           </h1>
         </RouterLink>
         
@@ -169,17 +169,88 @@ onMounted(() => {
       <!-- Separator line in collapsed mode -->
       <div v-if="sidebarCollapsed" class="w-12 h-px bg-gray-700 mx-auto mb-4"></div>
       <div v-for="(item, index) of blockchain.computedChainMenu" :key="index" class="px-2">
+        <!-- For first group (index 0), render children directly without collapse wrapper -->
+        <template v-if="index === 0 && isNavGroup(item)">
+          <div v-if="!sidebarCollapsed">
+            <div v-for="(el, key) of item?.children" :key="key" class="menu w-full !p-0">
+              <RouterLink
+                v-if="isNavLink(el)"
+                @click="sidebarShow = false"
+                class="glass-nav-item cursor-pointer flex items-center group relative transition-all duration-200"
+                :class="{
+                  'bg-purple-500/10 border-l-2 border-purple-500': selected($route, el),
+                  'justify-center': sidebarCollapsed
+                }"
+                :to="el.to"
+              >
+                <div class="glass-icon-wrapper transition-all duration-300"
+                  :class="[
+                    sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3',
+                    selected($route, el) ? 'text-purple-400' : (el.iconColor || 'text-gray-400')
+                  ]"
+                >
+                  <Icon
+                    v-if="el?.icon?.icon"
+                    :icon="el.icon.icon"
+                    class="text-lg transition-all duration-300"
+                  />
+                  <img
+                    v-else-if="el?.icon?.image"
+                    :src="el.icon.image"
+                    class="w-5 h-5 rounded-full"
+                  />
+                  <Icon
+                    v-else
+                    icon="mdi:circle-outline"
+                    class="text-lg"
+                  />
+                </div>
+                <div
+                  v-if="!sidebarCollapsed"
+                  class="text-sm capitalize text-gray-400 font-medium tracking-wide transition-all duration-300"
+                  :class="{
+                    '!text-purple-300 font-semibold': selected($route, el),
+                  }"
+                >
+                  {{ $t(el?.title) }}
+                </div>
+              </RouterLink>
+            </div>
+            <div
+              v-if="dashboard.networkType === NetworkType.Testnet"
+              class="menu w-full !p-0"
+            >
+              <RouterLink
+                class="glass-nav-item cursor-pointer flex items-center group relative"
+                :class="{
+                  'justify-center': sidebarCollapsed
+                }"
+                :to="`/${blockchain.chainName}/faucet`"
+              >
+                <div class="glass-icon-wrapper transition-all duration-300 text-blue-300"
+                  :class="sidebarCollapsed ? 'mr-0 ml-0' : 'mr-3 ml-3'"
+                >
+                  <Icon icon="mdi:water" class="text-lg" />
+                </div>
+                <div v-if="!sidebarCollapsed" class="text-sm capitalize text-gray-400 font-medium tracking-wide">
+                  Faucet
+                </div>
+                <div v-if="!sidebarCollapsed" class="badge badge-sm text-white glass-badge-pulse ml-auto">New</div>
+              </RouterLink>
+            </div>
+          </div>
+        </template>
+        
+        <!-- For other groups (index > 0), use collapse wrapper -->
         <div
-          v-if="isNavGroup(item) && (!sidebarCollapsed || index > 0)"
+          v-else-if="isNavGroup(item) && index > 0"
           :tabindex="index"
           class="collapse glass-nav-group mb-2 transition-all duration-300"
           :class="{
-            'collapse-arrow': index > 0 && item?.children?.length > 0,
-            'collapse-open': index === 0 && sidebarOpen,
-            'collapse-close': index === 0 && !sidebarOpen,
+            'collapse-arrow': item?.children?.length > 0,
           }"
         >
-          <input v-if="index > 0" type="checkbox" class="cursor-pointer !h-10 block" @click="changeOpen(index)" />
+          <input type="checkbox" class="cursor-pointer !h-10 block" @click="changeOpen(index)" />
           <div
             class="collapse-title !py-3 px-4 flex items-center cursor-pointer glass-nav-item-hover transition-all duration-300"
             :class="sidebarCollapsed ? 'justify-center' : ''"

@@ -18,6 +18,8 @@ const chainStore = useBlockchain();
 const baseStore = useBaseStore();
 const showDrawer = ref(false);
 const showWalletSelector = ref(false);
+const isConnecting = ref(false);
+const connectionError = ref('');
 
 // Don't allow drawer on wallet/suggest page
 const isWalletSuggestPage = computed(() => {
@@ -81,25 +83,70 @@ const params = computed(() => {
 
 async function connectKeplr() {
   if (!window.keplr) {
-    alert('Please install Keplr extension');
+    connectionError.value = 'Please install Keplr extension';
+    setTimeout(() => { connectionError.value = ''; }, 3000);
     return;
   }
   
+  isConnecting.value = true;
+  connectionError.value = '';
+  
   try {
-    // First, suggest the chain to Keplr
-    const chainId = baseStore.currentChainId || 'flora_7668378-1';
+    const chainId = 'flora_7668378-1';
     
-    // Try to suggest chain configuration first
+    // Suggest Flora chain configuration
+    const chainConfig = {
+      chainId: chainId,
+      chainName: 'Flora',
+      rpc: 'http://52.9.17.25:26657',
+      rest: 'http://52.9.17.25:1317',
+      bip44: {
+        coinType: 60, // EVM coin type
+      },
+      bech32Config: {
+        bech32PrefixAccAddr: 'flora',
+        bech32PrefixAccPub: 'florapub',
+        bech32PrefixValAddr: 'floravaloper',
+        bech32PrefixValPub: 'floravaloperpub',
+        bech32PrefixConsAddr: 'floravalcons',
+        bech32PrefixConsPub: 'floravalconspub',
+      },
+      currencies: [{
+        coinDenom: 'FLORA',
+        coinMinimalDenom: 'uflora',
+        coinDecimals: 18,
+        coinGeckoId: 'flora',
+      }],
+      feeCurrencies: [{
+        coinDenom: 'FLORA',
+        coinMinimalDenom: 'uflora',
+        coinDecimals: 18,
+        coinGeckoId: 'flora',
+        gasPriceStep: {
+          low: 5000000000,
+          average: 25000000000,
+          high: 40000000000,
+        },
+      }],
+      stakeCurrency: {
+        coinDenom: 'FLORA',
+        coinMinimalDenom: 'uflora',
+        coinDecimals: 18,
+        coinGeckoId: 'flora',
+      },
+      features: ['ibc-transfer', 'ibc-go', 'eth-address-gen', 'eth-key-sign'],
+    };
+    
     try {
-      await walletStore.suggestChain();
+      await window.keplr.experimentalSuggestChain(chainConfig);
     } catch (e) {
-      console.log('Chain already added or suggestion failed:', e);
+      console.log('Chain suggestion failed or already exists:', e);
     }
     
     // Enable the chain
     await window.keplr.enable(chainId);
     
-    // Get account info
+    // Get accounts
     const offlineSigner = window.keplr.getOfflineSigner(chainId);
     const accounts = await offlineSigner.getAccounts();
     
@@ -113,30 +160,72 @@ async function connectKeplr() {
     }
   } catch (error) {
     console.error('Keplr connection failed:', error);
-    alert('Failed to connect to Keplr. Please try adding the chain manually.');
+    connectionError.value = 'Failed to connect to Keplr';
+    setTimeout(() => { connectionError.value = ''; }, 3000);
+  } finally {
+    isConnecting.value = false;
   }
 }
 
 async function connectMetaMask() {
-  showWalletSelector.value = false;
-  
   if (!window.ethereum) {
-    alert('Please install MetaMask extension');
+    connectionError.value = 'Please install MetaMask extension';
+    setTimeout(() => { connectionError.value = ''; }, 3000);
     return;
   }
   
+  isConnecting.value = true;
+  connectionError.value = '';
+  
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    // First add Flora network to MetaMask
+    const chainId = '0x75029a'; // 7668378 in hex
+    
+    try {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: chainId,
+          chainName: 'Flora Network',
+          nativeCurrency: {
+            name: 'Flora',
+            symbol: 'FLORA',
+            decimals: 18
+          },
+          rpcUrls: ['http://52.9.17.25:8545', 'http://50.18.34.12:8545'],
+          blockExplorerUrls: ['http://flora-explorer-1753896988.s3-website-us-west-1.amazonaws.com']
+        }],
+      });
+    } catch (addError) {
+      // Chain might already be added
+      console.log('Add chain error:', addError);
+    }
+    
+    // Switch to Flora network
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: chainId }],
+    });
+    
+    // Request accounts
+    const accounts = await window.ethereum.request({ 
+      method: 'eth_requestAccounts' 
+    });
     
     if (accounts.length > 0) {
       walletStore.setConnectedWallet({
         wallet: 'MetaMask',
         address: accounts[0],
       });
+      showWalletSelector.value = false;
+      showDrawer.value = true;
     }
   } catch (error) {
     console.error('MetaMask connection failed:', error);
-    alert('Failed to connect to MetaMask');
+    connectionError.value = 'Failed to connect to MetaMask';
+    setTimeout(() => { connectionError.value = ''; }, 3000);
+  } finally {
+    isConnecting.value = false;
   }
 }
 
@@ -283,16 +372,23 @@ function handleWalletClick() {
             </button>
           </div>
           
+          <!-- Error Message -->
+          <div v-if="connectionError" class="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+            <p class="text-sm text-red-600 dark:text-red-400">{{ connectionError }}</p>
+          </div>
+          
           <!-- Wallet Options -->
           <div class="space-y-4">
             <!-- Keplr Option -->
             <button
               @click="connectKeplr"
-              class="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 transition-all duration-200 flex items-center justify-between group"
+              :disabled="isConnecting"
+              class="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 transition-all duration-200 flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <Icon icon="mdi:alpha-k-circle" class="text-2xl text-purple-600 dark:text-purple-400" />
+                  <Icon v-if="!isConnecting" icon="mdi:alpha-k-circle" class="text-2xl text-purple-600 dark:text-purple-400" />
+                  <Icon v-else icon="mdi:loading" class="text-2xl text-purple-600 dark:text-purple-400 animate-spin" />
                 </div>
                 <div class="text-left">
                   <h4 class="font-semibold text-gray-900 dark:text-white">Keplr</h4>
@@ -305,11 +401,13 @@ function handleWalletClick() {
             <!-- MetaMask Option -->
             <button
               @click="connectMetaMask"
-              class="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-orange-500 dark:hover:border-orange-500 transition-all duration-200 flex items-center justify-between group"
+              :disabled="isConnecting"
+              class="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-orange-500 dark:hover:border-orange-500 transition-all duration-200 flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                  <Icon icon="simple-icons:metamask" class="text-2xl text-orange-600 dark:text-orange-400" />
+                  <Icon v-if="!isConnecting" icon="simple-icons:metamask" class="text-2xl text-orange-600 dark:text-orange-400" />
+                  <Icon v-else icon="mdi:loading" class="text-2xl text-orange-600 dark:text-orange-400 animate-spin" />
                 </div>
                 <div class="text-left">
                   <h4 class="font-semibold text-gray-900 dark:text-white">MetaMask</h4>
