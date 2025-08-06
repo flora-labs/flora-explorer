@@ -184,17 +184,15 @@ const floraStats = computed(() => {
                 </h1>
               </div>
               
-              <!-- Action Icons - simplified for mobile -->
-              <div class="flex gap-2 sm:gap-3 items-center flex-shrink-0">
-                <!-- Discord button - icon only on mobile -->
+              <!-- Action Icons - no containers -->
+              <div class="flex gap-3 sm:gap-4 items-center flex-shrink-0">
+                <!-- Discord button - just the icon -->
                 <a 
                   href="https://discord.flora.network" 
                   target="_blank"
-                  class="group inline-flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full
-                         border border-white/15 dark:border-white/10
-                         backdrop-blur-sm
+                  class="group inline-flex items-center justify-center p-1
                          transition-all duration-200 ease-out
-                         hover:scale-[1.05] hover:bg-white/10 dark:hover:bg-white/5
+                         hover:scale-[1.1] 
                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                          focus-visible:outline-purple-500/60"
                   title="Join Flora Discord"
@@ -202,24 +200,22 @@ const floraStats = computed(() => {
                   <img 
                     :src="DiscordBotAvatar" 
                     alt="Flora Discord Bot" 
-                    class="w-6 h-6 rounded-full object-cover"
+                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover"
                   />
                 </a>
                 
-                <!-- Dev Portal button - icon only on mobile -->
+                <!-- Dev Portal button - just the icon -->
                 <a 
                   href="https://dev.flora.network"
                   target="_blank"
-                  class="group inline-flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full
-                         border border-white/15 dark:border-white/10
-                         backdrop-blur-sm
+                  class="group inline-flex items-center justify-center p-1
                          transition-all duration-200 ease-out
-                         hover:scale-[1.05] hover:bg-white/10 dark:hover:bg-white/5
+                         hover:scale-[1.1]
                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                          focus-visible:outline-blue-500/60"
                   title="Flora Dev Portal"
                 >
-                  <Icon icon="mdi:robot-excited" class="text-xl text-blue-500 dark:text-blue-400" />
+                  <Icon icon="mdi:robot-excited" class="text-2xl sm:text-3xl text-blue-500 dark:text-blue-400 hover:text-blue-400 dark:hover:text-blue-300 transition-colors" />
                 </a>
               </div>
             </div>
