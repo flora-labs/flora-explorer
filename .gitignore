@@ -8,3 +8,7 @@ dist
 .claude/
 CLAUDE.md
 *.mcp.json
+# Database files
+context_portal/context.db
+context_portal/conport_vector_data/
+*.sqlite3
