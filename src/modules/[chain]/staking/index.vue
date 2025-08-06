@@ -6,6 +6,7 @@ import { Icon } from '@iconify/vue';
 import type { Key, SlashingParam, Validator } from '@/types';
 import { formatSeconds } from '@/libs/utils';
 import { diff } from 'semver';
+import DelegateDialog from '@/components/DelegateDialog.vue';
 
 const staking = useStakingStore();
 const base = useBaseStore();
@@ -22,6 +23,10 @@ const yesterday = ref({} as Record<string, number>);
 const tab = ref('active');
 const unbondList = ref([] as Validator[]);
 const slashing = ref({} as SlashingParam);
+
+// Delegation dialog state
+const showDelegateDialog = ref(false);
+const selectedValidator = ref<Validator | null>(null);
 
 onMounted(() => {
   staking.fetchUnbondingValdiators().then((res) => {
@@ -105,14 +110,17 @@ const handleDelegate = (validator: Validator) => {
     return;
   }
   
-  // Open delegation dialog with validator address
-  try {
-    dialog.open('delegate', {
-      validator_address: validator.operator_address,
-    });
-  } catch (error) {
-    console.error('Error opening delegate dialog:', error);
-    alert('Failed to open delegation dialog. Please check console for errors.');
+  // Set the selected validator and show the custom dialog
+  selectedValidator.value = validator;
+  showDelegateDialog.value = true;
+};
+
+const onDelegationSuccess = (txHash: string) => {
+  console.log('Delegation successful with TX hash:', txHash);
+  // Refresh the staking data
+  staking.fetchValidators();
+  if (walletStore.currentAddress) {
+    walletStore.loadMyAsset(walletStore.currentAddress);
   }
 };
 
@@ -484,6 +492,14 @@ loadAvatars();
       </div>
     </div>
   </div>
+  
+  <!-- Delegation Dialog -->
+  <DelegateDialog 
+    v-model="showDelegateDialog"
+    :validator-address="selectedValidator?.operator_address || ''"
+    :validator-name="selectedValidator?.description?.moniker"
+    @success="onDelegationSuccess"
+  />
 </template>
 
 <route>
