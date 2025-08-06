@@ -12,8 +12,12 @@
         if (!savedTheme) {
           localStorage.setItem('theme', 'dark');
           document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-theme', 'dark');
         } else if (savedTheme === 'dark' || savedTheme === 'glassmorphic') {
           document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-theme', savedTheme);
+        } else {
+          document.documentElement.setAttribute('data-theme', savedTheme);
         }
       })();
     </script>
